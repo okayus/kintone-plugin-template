@@ -2,12 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 
 import { MessageService } from "../../src/desktop/service/MessageService";
 
+import type { SingleLineText } from "../../node_modules/@kintone/rest-api-client/lib/src/KintoneFields/types/field";
 import type { ConfigSchema } from "../../src/shared/types/Config";
 
-const mockConfig = {
+const mockConfig: ConfigSchema = {
   prefix: "prefix\n",
-  fields: ["field1", "field2"],
-} as ConfigSchema;
+  fields: [
+    { type: "SINGLE_LINE_TEXT", value: "field1" },
+    { type: "SINGLE_LINE_TEXT", value: "field2" },
+  ] as SingleLineText[],
+};
 
 describe("MessageService", () => {
   const messageService = new MessageService(mockConfig);
