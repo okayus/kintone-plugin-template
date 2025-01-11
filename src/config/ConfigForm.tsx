@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 
 import Form from "@rjsf/mui";
 import validator from "@rjsf/validator-ajv8";
+import Ajv from "ajv";
 
+import configSchema from "../shared/jsonSchema/config.schema.json";
 import { KintoneSdk } from "../shared/util/kintoneSdk";
 
 import type { ConfigSchema } from "../shared/types/Config";
-import type { kintoneType } from "../shared/util/kintoneSdk";
 import type { Properties } from "@kintone/rest-api-client/lib/src/client/types";
 import type { IChangeEvent } from "@rjsf/core";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
@@ -15,12 +16,17 @@ interface AppProps {
   pluginId: string;
 }
 
+interface FieldOption {
+  const: string;
+  title: string;
+}
+
 const log = (type: string) => console.log.bind(console, type);
 
 const generateFieldOptions = (
   properties: Properties,
-  fields: kintoneType[],
-) => {
+  fields: string[],
+): FieldOption[] => {
   const options = Object.keys(properties)
     .filter((fieldCode) => fields.includes(properties[fieldCode].type))
     .map((fieldCode) => {
@@ -34,7 +40,7 @@ const generateFieldOptions = (
 };
 
 const ConfigForm: React.FC<AppProps> = ({ pluginId }) => {
-  const [fieldOptions, setFieldOptions] = useState<any[]>([]);
+  const [fieldOptions, setFieldOptions] = useState<FieldOption[]>([]);
   const [formData, setFormData] = useState<ConfigSchema>({} as ConfigSchema);
 
   useEffect(() => {
@@ -62,7 +68,17 @@ const ConfigForm: React.FC<AppProps> = ({ pluginId }) => {
     fetchApps();
   }, [pluginId]);
 
+  const ajv = new Ajv();
+  const validate = ajv.compile(configSchema);
+
   const handleSubmit = (data: IChangeEvent<any>) => {
+    const valid = validate(data.formData);
+    if (!valid) {
+      console.error("Validation errors:", validate.errors);
+      alert("設定にエラーがあります。修正してください。");
+      return;
+    }
+
     const configSetting = { config: data.formData };
     kintone.plugin.app.setConfig(
       { config: JSON.stringify(configSetting) },
@@ -74,22 +90,17 @@ const ConfigForm: React.FC<AppProps> = ({ pluginId }) => {
   };
 
   const dynamicSchema = {
-    type: "object",
+    ...configSchema,
     properties: {
-      prefix: {
-        type: "string",
-        title: "通知メッセージのプレフィックス",
-      },
+      ...configSchema.properties,
       fields: {
-        type: "array",
-        description: "メッセージに表示するフィールド",
+        ...configSchema.properties.fields,
         items: {
           type: "string",
           oneOf: fieldOptions,
         },
       },
     },
-    required: ["prefix", "fields"],
   };
 
   const UiSchema: UiSchema = {
