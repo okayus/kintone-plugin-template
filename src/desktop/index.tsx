@@ -7,6 +7,7 @@ import IndexShowButton from "./components/IndexShowButton";
 import { MessageService } from "./service/MessageService";
 
 import type { ConfigSchema } from "../shared/types/Config";
+import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
 
 const renderButton = (
   container: HTMLElement,
@@ -19,7 +20,7 @@ const renderButton = (
 };
 
 interface KintoneEvent {
-  record: Record<string, { value: string }>;
+  record: Record;
   viewId: number;
   viewName: string;
 }
@@ -66,9 +67,7 @@ interface KintoneEvent {
           }
         }
 
-        messageService.alertMessage(
-          records as Array<Record<string, { value: string }>>,
-        );
+        messageService.alertMessage(records as Record[]);
       },
       `[${event.viewName}]のレコードを表示`,
     );

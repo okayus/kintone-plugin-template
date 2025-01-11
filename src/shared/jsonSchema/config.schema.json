@@ -2,15 +2,28 @@
   "type": "object",
   "properties": {
     "prefix": {
-      "type": "string",
-      "title": "通知メッセージのプレフィックス"
+      "type": "string"
     },
     "fields": {
       "type": "array",
-      "description": "メッセージに表示するフィールド",
       "items": {
-        "type": "string"
+        "$ref": "#/definitions/SingleLineText"
       }
+    }
+  },
+  "definitions": {
+    "SingleLineText": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["SINGLE_LINE_TEXT"]
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": ["type", "value"]
     }
   },
   "required": ["prefix", "fields"]

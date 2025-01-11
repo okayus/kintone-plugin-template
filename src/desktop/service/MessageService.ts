@@ -1,6 +1,6 @@
 import type { ConfigSchema } from "../../shared/types/Config";
-
-type RecordData = Record<string, { value: string }>;
+import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
+import type { SingleLineText } from "@kintone/rest-api-client/lib/src/KintoneFields/types/field";
 
 export class MessageService {
   private config: ConfigSchema;
@@ -9,17 +9,17 @@ export class MessageService {
     this.config = config;
   }
 
-  public alertMessage(records: Array<Record<string, { value: string }>>): void {
+  public alertMessage(records: Record[]): void {
     if (records.length === 0) {
       return;
     }
     alert(this.generateMessage(records));
   }
 
-  public generateMessage(records: RecordData[]): string {
-    const messageLine = (record: RecordData): string => {
+  public generateMessage(records: Record[]): string {
+    const messageLine = (record: Record): string => {
       const fieldValues: string[] = this.config.fields.map((field) => {
-        return record[field].value;
+        return (record[field.value] as SingleLineText).value;
       });
       return fieldValues.join(" ");
     };
