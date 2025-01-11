@@ -3,6 +3,8 @@ import {
   KintoneRestAPIClient,
 } from "@kintone/rest-api-client";
 
+import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
+
 export class KintoneSdk {
   private restApiClient: KintoneRestAPIClient;
 
@@ -42,7 +44,7 @@ export class KintoneSdk {
     const MAX_READ_LIMIT = 500;
     const MAX_TOTAL_RECORDS = 10000;
 
-    let allRecords: Array<Record<string, any>> = [];
+    let allRecords: Record[] = [];
     let offset = 0;
 
     while (allRecords.length < MAX_TOTAL_RECORDS) {
@@ -65,11 +67,7 @@ export class KintoneSdk {
     return { records: allRecords };
   }
 
-  public async updateRecord(
-    appId: number,
-    recordId: number,
-    record: Record<string, any>,
-  ) {
+  public async updateRecord(appId: number, recordId: number, record: Record) {
     const res = await this.restApiClient.record.updateRecord({
       app: appId,
       id: recordId,
@@ -80,7 +78,7 @@ export class KintoneSdk {
 
   public async updateAllRecords(
     appId: number,
-    records: Array<{ id: string; record: Record<string, any> }>,
+    records: Array<{ id: string; record: Record }>,
   ) {
     const res = await this.restApiClient.record.updateAllRecords({
       app: appId,
