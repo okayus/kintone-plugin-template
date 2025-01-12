@@ -13,5 +13,4 @@ export interface ConfigSchema {
    * メッセージに表示するフィールド
    */
   fields: string[];
-  [k: string]: unknown;
 }

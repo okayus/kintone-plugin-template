@@ -13,5 +13,6 @@
       }
     }
   },
-  "required": ["prefix", "fields"]
+  "required": ["prefix", "fields"],
+  "additionalProperties": false
 }
