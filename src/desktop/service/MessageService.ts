@@ -19,7 +19,7 @@ export class MessageService {
   public generateMessage(records: Record[]): string {
     const messageLine = (record: Record): string => {
       const fieldValues: string[] = this.config.fields.map((field) => {
-        return (record[field.value] as SingleLineText).value;
+        return (record[field] as SingleLineText).value;
       });
       return fieldValues.join(" ");
     };

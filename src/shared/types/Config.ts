@@ -5,13 +5,13 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type NoName = string;
+
 export interface ConfigSchema {
-  prefix: string;
-  fields: SingleLineText[];
-  [k: string]: unknown;
-}
-export interface SingleLineText {
-  type: "SINGLE_LINE_TEXT";
-  value: string;
+  prefix: NoName;
+  /**
+   * メッセージに表示するフィールド
+   */
+  fields: string[];
   [k: string]: unknown;
 }

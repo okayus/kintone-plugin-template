@@ -7,10 +7,7 @@ import type { ConfigSchema } from "../../src/shared/types/Config";
 
 const mockConfig: ConfigSchema = {
   prefix: "prefix\n",
-  fields: [
-    { type: "SINGLE_LINE_TEXT", value: "field1" },
-    { type: "SINGLE_LINE_TEXT", value: "field2" },
-  ] as SingleLineText[],
+  fields: ["field1", "field2"],
 };
 
 describe("MessageService", () => {
