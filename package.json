@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/npm-start.js",
+    "generate-key": "node scripts/generate-key.js",
     "develop_vite_config": "vite build -c vite_config.config.ts --watch",
     "develop_vite_desktop": "vite build -c vite_desktop.config.ts --watch",
     "build:dev": "vite build -c vite_config.config.ts --mode development && vite build -c vite_desktop.config.ts --mode development && kintone-plugin-packer --ppk private.ppk --out dist/plugin.zip dist/out",
