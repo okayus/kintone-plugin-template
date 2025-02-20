@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "module": "es2015",
+    "lib": ["ESNext", "DOM"],
     "jsx": "react",
     "strict": true,
     "skipLibCheck": true,
