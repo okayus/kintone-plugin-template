@@ -1,0 +1,64 @@
+permissions:
+  contents: write
+
+name: Versioning
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  version:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Determine version increment
+        id: determine_version
+        run: |
+          PR_LABELS=$(jq -r '.pull_request.labels | map(.name) | join(",")' "$GITHUB_EVENT_PATH")
+          if [[ "$PR_LABELS" == *"breaking-change"* ]]; then
+            echo "::set-output name=increment::major"
+          elif [[ "$PR_LABELS" == *"enhancement"* ]]; then
+            echo "::set-output name=increment::minor"
+          elif [[ "$PR_LABELS" == *"bug"* ]]; then
+            echo "::set-output name=increment::patch"
+          else
+            echo "No matching labels found. Skipping version increment."
+            exit 0
+          fi  
+
+      - name: Bump version in package.json
+        id: bump_version
+        run: |
+          npm version ${{ steps.determine_version.outputs.increment }} --no-git-tag-version
+          NEW_VERSION=$(node -p -e "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Bump version in plugin/manifest.json
+        run: |
+          jq --arg version "${{ env.new_version }}" '.version = $version' plugin/manifest.json > tmp.$$.json && mv tmp.$$.json plugin/manifest.json
+
+      - name: Commit version bump
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add package.json plugin/manifest.json
+          git commit -m "Bump version to ${{ env.new_version }}"
+          git push origin HEAD:${{ github.ref }}
+
+      - name: Tag new version
+        run: |
+          git tag -a "v${{ env.new_version }}" -m "Version ${{ env.new_version }}"
+          git push origin "v${{ env.new_version }}"
