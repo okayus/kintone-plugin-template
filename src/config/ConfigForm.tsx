@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Form from "@rjsf/mui";
 import validator from "@rjsf/validator-ajv8";
 import Ajv from "ajv";
@@ -95,6 +97,47 @@ const ConfigForm: React.FC<AppProps> = ({
     );
   };
 
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedConfig = JSON.parse(e.target?.result as string);
+          const valid = validate(importedConfig);
+          if (!valid) {
+            console.error("Validation errors:", validate.errors);
+            alert("インポートした設定にエラーがあります。修正してください。");
+            return;
+          }
+          kintone.plugin.app.setConfig(
+            { config: JSON.stringify({ config: importedConfig }) },
+            function () {
+              alert("設定がインポートされました。");
+              window.location.href = "../../flow?app=" + kintoneUtil.getId();
+            },
+          );
+        } catch (error) {
+          console.error("Failed to import config:", error);
+          alert("設定のインポートに失敗しました。");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleExport = () => {
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(formData));
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "config.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
   const dynamicSchema = {
     ...configSchema,
     properties: {
@@ -116,14 +159,33 @@ const ConfigForm: React.FC<AppProps> = ({
   };
 
   return (
-    <Form
-      schema={dynamicSchema as RJSFSchema}
-      uiSchema={UiSchema}
-      validator={validator}
-      formData={formData}
-      onSubmit={handleSubmit}
-      onError={log("errors")}
-    />
+    <div>
+      <Form
+        schema={dynamicSchema as RJSFSchema}
+        uiSchema={UiSchema}
+        validator={validator}
+        formData={formData}
+        onSubmit={handleSubmit}
+        onError={log("errors")}
+      />
+      <Box mt={2} display="flex" justifyContent="flex-start" gap={2}>
+        <input
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          style={{ display: "none" }}
+          id="import-button"
+        />
+        <label htmlFor="import-button">
+          <Button variant="contained" component="span" color="primary">
+            インポート
+          </Button>
+        </label>
+        <Button variant="contained" color="primary" onClick={handleExport}>
+          エクスポート
+        </Button>
+      </Box>
+    </div>
   );
 };
 
