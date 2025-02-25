@@ -3,21 +3,39 @@ import { describe, expect, it, vi } from "vitest";
 import { MessageService } from "./MessageService";
 
 import type { ConfigSchema } from "../../shared/types/Config";
-import type { SingleLineText } from "@kintone/rest-api-client/lib/src/KintoneFields/types/field";
-
-const mockConfig: ConfigSchema = {
-  prefix: "prefix\n",
-  fields: ["field1", "field2"],
-};
+import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
 
 describe("MessageService", () => {
-  const messageService = new MessageService(mockConfig);
-
   describe("generateMessages", () => {
     it("プレフィックスとフィールド値を含むメッセージを返す", () => {
-      const records = [
-        { field1: { value: "value1" }, field2: { value: "value2" } },
-        { field1: { value: "value3" }, field2: { value: "value4" } },
+      const mockConfig: ConfigSchema = {
+        prefix: "prefix\n",
+        fields: ["field1", "field2"],
+      };
+
+      const messageService = new MessageService(mockConfig);
+
+      const records: Record[] = [
+        {
+          field1: {
+            type: "SINGLE_LINE_TEXT",
+            value: "value1",
+          },
+          field2: {
+            type: "SINGLE_LINE_TEXT",
+            value: "value2",
+          },
+        },
+        {
+          field1: {
+            type: "SINGLE_LINE_TEXT",
+            value: "value3",
+          },
+          field2: {
+            type: "SINGLE_LINE_TEXT",
+            value: "value4",
+          },
+        },
       ];
       const message = messageService.generateMessage(records);
 
