@@ -32,7 +32,7 @@ jobs:
             echo "::set-output name=increment::major"
           elif [[ "$PR_LABELS" == *"enhancement"* ]]; then
             echo "::set-output name=increment::minor"
-          elif [[ "$PR_LABELS" == *"bug"* ]]; then
+          elif [[ "$PR_LABELS" == *"bug"* ]] || [[ "$PR_LABELS" == *"refactor"* ]]; then
             echo "::set-output name=increment::patch"
           else
             echo "No matching labels found. Skipping version increment."
