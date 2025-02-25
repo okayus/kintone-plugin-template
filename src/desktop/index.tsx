@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 
+import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+
 import { KintoneSdk } from "../shared/util/kintoneSdk";
 
 import IndexShowButton from "./components/IndexShowButton";
@@ -20,6 +22,7 @@ const renderButton = (
 };
 
 interface KintoneEvent {
+  appId: number;
   record: Record;
   viewId: number;
   viewName: string;
@@ -32,9 +35,9 @@ interface KintoneEvent {
     if (!pluginConfig) return;
 
     const config: ConfigSchema = JSON.parse(pluginConfig).config;
-    const kintoneSdk = new KintoneSdk();
-
-    const messageService = new MessageService(config);
+    const restApiClient = new KintoneRestAPIClient();
+    const kintoneSdk = new KintoneSdk(restApiClient);
+    const messageService = new MessageService(config, kintoneSdk);
 
     const headerMenuSpace = kintone.app.getHeaderMenuSpaceElement();
     if (!headerMenuSpace) return;
@@ -45,29 +48,11 @@ interface KintoneEvent {
     renderButton(
       container,
       async () => {
-        const appId = kintone.app.getId();
-        if (!appId) throw new Error("アプリIDを取得できませんでした");
+        const records = await messageService.fetchRecords(event.appId);
 
-        const condition = kintone.app.getQueryCondition() || "";
-        const records = (await kintoneSdk.getRecords(appId, [], condition))
-          .records;
-
-        if (!records.length) {
-          alert("対象レコードがありません");
-          return;
+        if (records.length > 0) {
+          messageService.alertMessage(records as Record[]);
         }
-        // カーソルAPIを使用しない場合は、取得件数の上限が10,000件
-        if (records.length === 10000) {
-          if (
-            !confirm(
-              "レコード取得件数が最大値の10,000件に達しました。続行しますか？",
-            )
-          ) {
-            return;
-          }
-        }
-
-        messageService.alertMessage(records as Record[]);
       },
       `[${event.viewName}]のレコードを表示`,
     );

@@ -3,14 +3,15 @@ import {
   KintoneRestAPIClient,
 } from "@kintone/rest-api-client";
 
-import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
+import type {
+  AppID,
+  Record,
+} from "@kintone/rest-api-client/lib/src/client/types";
 
 export class KintoneSdk {
   private restApiClient: KintoneRestAPIClient;
 
-  constructor(
-    restApiClient: KintoneRestAPIClient = new KintoneRestAPIClient({}),
-  ) {
+  constructor(restApiClient: KintoneRestAPIClient) {
     this.restApiClient = restApiClient;
   }
 
@@ -24,20 +25,20 @@ export class KintoneSdk {
     return apps;
   }
 
-  public async fetchFields(appId: number, preview: boolean = true) {
+  public async fetchFields(appId: AppID, preview: boolean = true) {
     const fields = (
       await this.restApiClient.app.getFormFields({ app: appId, preview })
     ).properties;
     return fields;
   }
 
-  public async getViews(appId: number) {
+  public async getViews(appId: AppID) {
     const views = await this.restApiClient.app.getViews({ app: appId });
     return views;
   }
 
   public async getRecords(
-    appId: number,
+    appId: AppID,
     fields: string[] = [],
     query: string = "",
   ) {
@@ -67,7 +68,7 @@ export class KintoneSdk {
     return { records: allRecords };
   }
 
-  public async updateRecord(appId: number, recordId: number, record: Record) {
+  public async updateRecord(appId: AppID, recordId: number, record: Record) {
     const res = await this.restApiClient.record.updateRecord({
       app: appId,
       id: recordId,
@@ -77,7 +78,7 @@ export class KintoneSdk {
   }
 
   public async updateAllRecords(
-    appId: number,
+    appId: AppID,
     records: Array<{ id: string; record: Record }>,
   ) {
     const res = await this.restApiClient.record.updateAllRecords({
