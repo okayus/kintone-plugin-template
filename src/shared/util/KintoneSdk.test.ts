@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { describe, expect, it, vi } from "vitest";
 
-import { KintoneSdk } from "../../src/shared/util/kintoneSdk";
+import { KintoneSdk } from "./kintoneSdk";
 
 vi.mock("@kintone/rest-api-client", () => {
   return {

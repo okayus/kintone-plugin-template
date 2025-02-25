@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { MessageService } from "../../src/desktop/service/MessageService";
+import { MessageService } from "./MessageService";
 
-import type { SingleLineText } from "../../node_modules/@kintone/rest-api-client/lib/src/KintoneFields/types/field";
-import type { ConfigSchema } from "../../src/shared/types/Config";
+import type { ConfigSchema } from "../../shared/types/Config";
+import type { SingleLineText } from "@kintone/rest-api-client/lib/src/KintoneFields/types/field";
 
 const mockConfig: ConfigSchema = {
   prefix: "prefix\n",
