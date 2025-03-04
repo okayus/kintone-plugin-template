@@ -7,11 +7,10 @@
     "generate-key": "node scripts/generate-key.js",
     "develop_vite_config": "vite build -c vite_config.config.ts --watch",
     "develop_vite_desktop": "vite build -c vite_desktop.config.ts --watch",
-    "build:dev": "vite build -c vite_config.config.ts --mode development && vite build -c vite_desktop.config.ts --mode development && kintone-plugin-packer --ppk private.ppk --out dist/plugin.zip dist/out",
-    "build": "vite build -c vite_config.config.ts && vite build -c vite_desktop.config.ts && kintone-plugin-packer --ppk private.ppk --out dist/plugin.zip dist/out",
+    "build": "vite build -c vite_config.config.ts && vite build -c vite_desktop.config.ts && mv dist/config/js/config.js plugin/js && mv dist/desktop/js/desktop.js plugin/js && rm -rf dist && kintone-plugin-packer --ppk private.ppk --out plugin/plugin.zip plugin",
     "develop_pack": "npm run pack -- --watch",
     "pack": "kintone-plugin-packer --ppk private.ppk --out dist/plugin.zip dist/out",
-    "upload": ". ./.env && kintone-plugin-uploader dist/plugin.zip --base-url $KINTONE_BASE_URL --username $KINTONE_USERNAME --password $KINTONE_PASSWORD",
+    "upload": ". ./.env && kintone-plugin-uploader plugin/plugin.zip --base-url $KINTONE_BASE_URL --username $KINTONE_USERNAME --password $KINTONE_PASSWORD",
     "lint": "eslint src",
     "test": "vitest",
     "generate-types": "json2ts src/shared/jsonSchema/config.schema.json -o src/shared/types/Config.ts"
