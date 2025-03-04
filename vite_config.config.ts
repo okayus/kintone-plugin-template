@@ -12,7 +12,7 @@ export default defineConfig({
   publicDir: "plugin",
   build: {
     target: "es2015",
-    outDir: `${path.resolve(__dirname)}/dist/out`,
+    outDir: `${path.resolve(__dirname)}/dist/config`,
     emptyOutDir: false,
     sourcemap: true,
     minify: "esbuild",

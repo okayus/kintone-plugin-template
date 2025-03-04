@@ -1,5 +1,6 @@
 node_modules
 private.ppk
 jsdoc
-dist
+plugin/*.zip
+plugin/js
 .env
