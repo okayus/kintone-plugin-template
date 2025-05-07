@@ -1,32 +1,13 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 
 import { KintoneSdk } from "../shared/util/kintoneSdk";
 
-import IndexShowButton from "./components/IndexShowButton";
+import { renderExecutionButton } from "./components/desktopUIHelpers";
 import { MessageService } from "./service/MessageService";
 
 import type { ConfigSchema } from "../shared/types/Config";
 import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
-
-const renderButton = (
-  container: HTMLElement,
-  onClick: () => Promise<void>,
-  buttonLabel: string,
-) => {
-  createRoot(container).render(
-    <IndexShowButton onClick={onClick} buttonLabel={buttonLabel} />,
-  );
-};
-
-interface KintoneEvent {
-  appId: number;
-  record: Record;
-  viewId: number;
-  viewName: string;
-}
+import type { KintoneEvent } from "src/shared/types/KintoneTypes";
 
 // メイン処理
 ((PLUGIN_ID) => {
@@ -39,22 +20,22 @@ interface KintoneEvent {
     const kintoneSdk = new KintoneSdk(restApiClient);
     const messageService = new MessageService(config, kintoneSdk);
 
-    const headerMenuSpace = kintone.app.getHeaderMenuSpaceElement();
-    if (!headerMenuSpace) return;
-
-    const container = document.createElement("div");
-    headerMenuSpace.appendChild(container);
-
-    renderButton(
-      container,
-      async () => {
+    const handleAlertButtonClick = async () => {
+      try {
         const records = await messageService.fetchRecords(event.appId);
-
         if (records.length > 0) {
           messageService.alertMessage(records as Record[]);
         }
-      },
-      `[${event.viewName}]のレコードを表示`,
+      } catch (error) {
+        console.error("Error:", error);
+        throw error;
+      }
+    };
+
+    renderExecutionButton(
+      "alert-button",
+      handleAlertButtonClick,
+      "メッセージを表示",
     );
   });
 })(kintone.$PLUGIN_ID);
