@@ -1,6 +1,6 @@
 {
   "name": "kintone-plugin-template",
-  "version": "1.2.3",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "start": "node scripts/npm-start.js",
