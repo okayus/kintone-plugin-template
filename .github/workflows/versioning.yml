@@ -39,6 +39,54 @@ jobs:
             exit 0
           fi  
 
+      - name: Calculate New Version
+        id: calculate_new_version
+        run: |
+          CURRENT_VERSION=$(jq -r '.version' plugin/manifest.json)
+          INCREMENT_TYPE="${{ steps.determine_version.outputs.increment }}"
+          NEW_VERSION=""
+
+          if [[ -z "$CURRENT_VERSION" ]] || [[ "$CURRENT_VERSION" == "null" ]] || [[ "$CURRENT_VERSION" == "" ]]; then
+            echo "Current version is empty or null in manifest.json. Initializing version."
+            if [[ "$INCREMENT_TYPE" == "major" ]]; then
+              NEW_VERSION="1.0.0"
+            elif [[ "$INCREMENT_TYPE" == "minor" ]]; then
+              NEW_VERSION="0.1.0"
+            elif [[ "$INCREMENT_TYPE" == "patch" ]]; then
+              NEW_VERSION="0.0.1"
+            else
+              echo "Error: Unknown increment type for initial versioning: $INCREMENT_TYPE"
+              exit 1
+            fi
+          else
+            IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+            # Ensure numeric values, default to 0 if parsing failed (e.g. non-semver string)
+            major=${major//[^0-9]/}
+            minor=${minor//[^0-9]/}
+            patch=${patch//[^0-9]/}
+            major=$((major)) # Convert to number
+            minor=$((minor))
+            patch=$((patch))
+
+            if [[ "$INCREMENT_TYPE" == "major" ]]; then
+              major=$((major + 1))
+              minor=0
+              patch=0
+            elif [[ "$INCREMENT_TYPE" == "minor" ]]; then
+              minor=$((minor + 1))
+              patch=0
+            elif [[ "$INCREMENT_TYPE" == "patch" ]]; then
+              patch=$((patch + 1))
+            else
+              echo "Error: Unknown increment type: $INCREMENT_TYPE"
+              exit 1
+            fi
+            NEW_VERSION="$major.$minor.$patch"
+          fi
+          
+          echo "New version will be: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
+
       - name: Bump version in plugin/manifest.json
         run: |
           jq --arg version "${{ env.new_version }}" '.version = $version' plugin/manifest.json > tmp.$$.json && mv tmp.$$.json plugin/manifest.json
