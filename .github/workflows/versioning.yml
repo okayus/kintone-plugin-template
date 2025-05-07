@@ -39,13 +39,6 @@ jobs:
             exit 0
           fi  
 
-      - name: Bump version in package.json
-        id: bump_version
-        run: |
-          npm version ${{ steps.determine_version.outputs.increment }} --no-git-tag-version
-          NEW_VERSION=$(node -p -e "require('./package.json').version")
-          echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
-
       - name: Bump version in plugin/manifest.json
         run: |
           jq --arg version "${{ env.new_version }}" '.version = $version' plugin/manifest.json > tmp.$$.json && mv tmp.$$.json plugin/manifest.json
@@ -54,7 +47,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add package.json plugin/manifest.json
+          git add plugin/manifest.json
           git commit -m "Bump version to ${{ env.new_version }}"
           git push origin HEAD:${{ github.ref }}
 
