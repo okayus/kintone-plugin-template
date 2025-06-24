@@ -28,24 +28,62 @@ export class MessageService {
     return records;
   }
 
-  public alertMessage(records: Record[]): void {
-    if (records.length === 0) {
-      return;
+  public async fetchRecordsFromSettings(): Promise<Array<{setting: any, records: Record[]}>> {
+    // 設定されたすべてのアプリからレコードを取得し、設定と紐付けて返す
+    const allResults: Array<{setting: any, records: Record[]}> = [];
+    
+    for (const setting of this.config.settings) {
+      if (setting.appId && setting.targetField) {
+        try {
+          const records = (await this.kintoneSdk.getRecords(
+            Number(setting.appId), 
+            [setting.targetField], 
+            ""
+          )).records;
+          allResults.push({ setting, records });
+        } catch (error) {
+          console.error(`Failed to fetch records from app ${setting.appId}:`, error);
+          allResults.push({ setting, records: [] });
+        }
+      }
     }
-    alert(this.generateMessage(records));
+    
+    return allResults;
   }
 
-  public generateMessage(records: Record[]): string {
-    const messageLine = (record: Record): string => {
-      const fieldValues: string[] = this.config.fields.map((field) => {
-        return (record[field] as SingleLineText).value;
-      });
-      return fieldValues.join(" ");
-    };
+  public alertMessage(recordsWithSettings: Array<{setting: any, records: Record[]}>): void {
+    const totalRecords = recordsWithSettings.reduce((sum, item) => sum + item.records.length, 0);
+    if (totalRecords === 0) {
+      alert("表示するレコードがありません。");
+      return;
+    }
+    alert(this.generateMessage(recordsWithSettings));
+  }
 
-    const messageFromRecords: string = records
-      .map((record) => messageLine(record))
-      .join("\n");
-    return this.config.prefix + messageFromRecords;
+  public generateMessage(recordsWithSettings: Array<{setting: any, records: Record[]}>): string {
+    const messages: string[] = [];
+    
+    for (const { setting, records } of recordsWithSettings) {
+      if (setting.appId && setting.targetField && records.length > 0) {
+        const messageLine = (record: Record): string => {
+          const field = record[setting.targetField];
+          if (field && typeof field === 'object' && 'value' in field) {
+            return String(field.value || '');
+          }
+          return '';
+        };
+
+        const messageFromRecords: string = records
+          .map((record) => messageLine(record))
+          .filter(line => line.trim() !== '')
+          .join(", ");
+          
+        if (messageFromRecords) {
+          messages.push(setting.prefix + messageFromRecords);
+        }
+      }
+    }
+    
+    return messages.join("\n");
   }
 }
