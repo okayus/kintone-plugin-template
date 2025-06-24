@@ -11,11 +11,11 @@ import type {
 export class KintoneSdk {
   private restApiClient: KintoneRestAPIClient;
 
-  constructor(restApiClient: KintoneRestAPIClient) {
-    this.restApiClient = restApiClient;
+  constructor(restApiClient?: KintoneRestAPIClient) {
+    this.restApiClient = restApiClient || new KintoneRestAPIClient();
   }
 
-  public async getApps() {
+  public async fetchApps() {
     const apps = await this.restApiClient.app.getApps({
       ids: null,
       codes: null,

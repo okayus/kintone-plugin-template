@@ -22,13 +22,12 @@ import type { KintoneEvent } from "src/shared/types/KintoneTypes";
 
     const handleAlertButtonClick = async () => {
       try {
-        const records = await messageService.fetchRecords(event.appId);
-        if (records.length > 0) {
-          messageService.alertMessage(records as Record[]);
-        }
+        // 設定されたアプリからレコードを取得
+        const recordsWithSettings = await messageService.fetchRecordsFromSettings();
+        messageService.alertMessage(recordsWithSettings);
       } catch (error) {
         console.error("Error:", error);
-        throw error;
+        alert("エラーが発生しました: " + error);
       }
     };
 
