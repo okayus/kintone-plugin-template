@@ -6,12 +6,10 @@ import { renderExecutionButton } from "./components/desktopUIHelpers";
 import { MessageService } from "./service/MessageService";
 
 import type { ConfigSchema } from "../shared/types/Config";
-import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
-import type { KintoneEvent } from "src/shared/types/KintoneTypes";
 
 // メイン処理
 ((PLUGIN_ID) => {
-  kintone.events.on("app.record.index.show", async (event: KintoneEvent) => {
+  kintone.events.on("app.record.index.show", async () => {
     const pluginConfig = kintone.plugin.app.getConfig(PLUGIN_ID).config;
     if (!pluginConfig) return;
 
@@ -23,7 +21,8 @@ import type { KintoneEvent } from "src/shared/types/KintoneTypes";
     const handleAlertButtonClick = async () => {
       try {
         // 設定されたアプリからレコードを取得
-        const recordsWithSettings = await messageService.fetchRecordsFromSettings();
+        const recordsWithSettings =
+          await messageService.fetchRecordsFromSettings();
         messageService.alertMessage(recordsWithSettings);
       } catch (error) {
         console.error("Error:", error);

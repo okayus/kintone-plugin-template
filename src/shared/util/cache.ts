@@ -1,5 +1,25 @@
-import { KintoneSdk } from './kintoneSdk';
-import type { KintoneApp, Properties } from '@kintone/rest-api-client/lib/src/client/types';
+import { KintoneSdk } from "./kintoneSdk";
+
+import type { Properties } from "@kintone/rest-api-client/lib/src/client/types";
+
+interface KintoneApp {
+  appId: string;
+  code: string;
+  name: string;
+  description: string;
+  spaceId: string | null;
+  threadId: string | null;
+  createdAt: string;
+  creator: {
+    code: string;
+    name: string;
+  };
+  modifiedAt: string;
+  modifier: {
+    code: string;
+    name: string;
+  };
+}
 
 export class Cache {
   private static instance: Cache | null = null;
@@ -23,7 +43,7 @@ export class Cache {
       const response = await this.kintoneSdk.fetchApps();
       this.apps = response.apps;
     } catch (error) {
-      console.error('Failed to initialize cache:', error);
+      console.error("Failed to initialize cache:", error);
       this.apps = [];
     }
   }
@@ -34,7 +54,7 @@ export class Cache {
 
   async getFormFields(appId: string | number): Promise<Properties> {
     const appIdStr = String(appId);
-    
+
     if (this.fieldsCache[appIdStr]) {
       return this.fieldsCache[appIdStr];
     }
