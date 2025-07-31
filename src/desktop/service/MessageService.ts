@@ -5,7 +5,6 @@ import type {
   AppID,
   Record,
 } from "@kintone/rest-api-client/lib/src/client/types";
-import type { SingleLineText } from "@kintone/rest-api-client/lib/src/KintoneFields/types/field";
 
 export class MessageService {
   private config: ConfigSchema;
@@ -28,31 +27,43 @@ export class MessageService {
     return records;
   }
 
-  public async fetchRecordsFromSettings(): Promise<Array<{setting: any, records: Record[]}>> {
+  public async fetchRecordsFromSettings(): Promise<
+    Array<{ setting: any; records: Record[] }>
+  > {
     // 設定されたすべてのアプリからレコードを取得し、設定と紐付けて返す
-    const allResults: Array<{setting: any, records: Record[]}> = [];
-    
+    const allResults: Array<{ setting: any; records: Record[] }> = [];
+
     for (const setting of this.config.settings) {
       if (setting.appId && setting.targetField) {
         try {
-          const records = (await this.kintoneSdk.getRecords(
-            Number(setting.appId), 
-            [setting.targetField], 
-            ""
-          )).records;
+          const records = (
+            await this.kintoneSdk.getRecords(
+              Number(setting.appId),
+              [setting.targetField],
+              "",
+            )
+          ).records;
           allResults.push({ setting, records });
         } catch (error) {
-          console.error(`Failed to fetch records from app ${setting.appId}:`, error);
+          console.error(
+            `Failed to fetch records from app ${setting.appId}:`,
+            error,
+          );
           allResults.push({ setting, records: [] });
         }
       }
     }
-    
+
     return allResults;
   }
 
-  public alertMessage(recordsWithSettings: Array<{setting: any, records: Record[]}>): void {
-    const totalRecords = recordsWithSettings.reduce((sum, item) => sum + item.records.length, 0);
+  public alertMessage(
+    recordsWithSettings: Array<{ setting: any; records: Record[] }>,
+  ): void {
+    const totalRecords = recordsWithSettings.reduce(
+      (sum, item) => sum + item.records.length,
+      0,
+    );
     if (totalRecords === 0) {
       alert("表示するレコードがありません。");
       return;
@@ -60,30 +71,32 @@ export class MessageService {
     alert(this.generateMessage(recordsWithSettings));
   }
 
-  public generateMessage(recordsWithSettings: Array<{setting: any, records: Record[]}>): string {
+  public generateMessage(
+    recordsWithSettings: Array<{ setting: any; records: Record[] }>,
+  ): string {
     const messages: string[] = [];
-    
+
     for (const { setting, records } of recordsWithSettings) {
       if (setting.appId && setting.targetField && records.length > 0) {
         const messageLine = (record: Record): string => {
           const field = record[setting.targetField];
-          if (field && typeof field === 'object' && 'value' in field) {
-            return String(field.value || '');
+          if (field && typeof field === "object" && "value" in field) {
+            return String(field.value || "");
           }
-          return '';
+          return "";
         };
 
         const messageFromRecords: string = records
           .map((record) => messageLine(record))
-          .filter(line => line.trim() !== '')
+          .filter((line) => line.trim() !== "")
           .join(", ");
-          
+
         if (messageFromRecords) {
           messages.push(setting.prefix + messageFromRecords);
         }
       }
     }
-    
+
     return messages.join("\n");
   }
 }

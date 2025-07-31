@@ -7,7 +7,11 @@ import { KintoneUtil } from "../shared/util/KintoneUtil";
 import ConfigForm from "./ConfigForm";
 
 (async (PLUGIN_ID) => {
-  createRoot(document.getElementById("config")!).render(
+  const configElement = document.getElementById("config");
+  if (!configElement) {
+    throw new Error("Config element not found");
+  }
+  createRoot(configElement).render(
     <ConfigForm
       pluginId={PLUGIN_ID as string}
       kintoneSdk={new KintoneSdk()}

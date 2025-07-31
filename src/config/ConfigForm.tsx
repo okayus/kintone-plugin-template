@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from "react";
 
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
 import Form from "@rjsf/mui";
 import validator from "@rjsf/validator-ajv8";
 import Ajv from "ajv";
@@ -19,11 +15,12 @@ import Ajv from "ajv";
 import configSchema from "../shared/jsonSchema/config.schema.json";
 import { KintoneSdk } from "../shared/util/kintoneSdk";
 import { KintoneUtil } from "../shared/util/KintoneUtil";
-import { Cache } from "../shared/util/cache";
+
+import { customWidgets } from "./widgets/CustomWidgets";
 
 import type { ConfigSchema } from "../shared/types/Config";
 import type { IChangeEvent } from "@rjsf/core";
-import type { RJSFSchema, UiSchema, RegistryWidgetsType } from "@rjsf/utils";
+import type { RJSFSchema } from "@rjsf/utils";
 
 interface AppProps {
   pluginId: string;
@@ -55,11 +52,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const ConfigForm: React.FC<AppProps> = ({
-  pluginId,
-  kintoneSdk,
-  kintoneUtil,
-}) => {
+const ConfigForm: React.FC<AppProps> = ({ pluginId, kintoneUtil }) => {
   const [formData, setFormData] = useState<ConfigSchema>({ settings: [] });
   const [currentTab, setCurrentTab] = useState(0);
 
@@ -94,13 +87,13 @@ const ConfigForm: React.FC<AppProps> = ({
   const handleAddTab = () => {
     const newSetting = {
       name: `設定 ${formData.settings.length + 1}`,
-      appId: '',
-      targetField: '',
-      prefix: ''
+      appId: "",
+      targetField: "",
+      prefix: "",
     };
     setFormData({
       ...formData,
-      settings: [...formData.settings, newSetting]
+      settings: [...formData.settings, newSetting],
     });
     setCurrentTab(formData.settings.length);
   };
@@ -143,7 +136,9 @@ const ConfigForm: React.FC<AppProps> = ({
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const importedConfig = JSON.parse(e.target?.result as string);
+          const importedConfig = JSON.parse(
+            e.target?.result as string,
+          ) as ConfigSchema;
           const valid = validate(importedConfig);
           if (!valid) {
             console.error("Validation errors:", validate.errors);
@@ -167,167 +162,17 @@ const ConfigForm: React.FC<AppProps> = ({
       encodeURIComponent(JSON.stringify(formData, null, 2));
     const downloadAnchorNode = document.createElement("a");
     downloadAnchorNode.setAttribute("href", dataStr);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-    downloadAnchorNode.setAttribute("download", `kintone-config-${timestamp}.json`);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .split("T")[0];
+    downloadAnchorNode.setAttribute(
+      "download",
+      `kintone-config-${timestamp}.json`,
+    );
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
-  };
-
-  const uiSchema: UiSchema = {
-    settings: {
-      items: {
-        appId: {
-          "ui:widget": "appSelector",
-        },
-        targetField: {
-          "ui:widget": "fieldSelector",
-        },
-        prefix: {
-          "ui:widget": "textarea",
-        },
-      },
-    },
-  };
-
-  const customWidgets: RegistryWidgetsType = {
-    appSelector: (props: any) => {
-      const { value, onChange, formContext } = props;
-      const [apps, setApps] = useState<any[]>([]);
-      const [cache] = useState(() => Cache.getInstance());
-
-      useEffect(() => {
-        const loadApps = async () => {
-          await cache.init();
-          setApps(cache.getApps());
-        };
-        loadApps();
-      }, [cache]);
-
-      const handleAppChange = (newAppId: string) => {
-        onChange(newAppId);
-        // アプリが変更されたら、対象フィールドをリセット
-        if (formContext?.currentIndex !== undefined && formContext?.handleUpdateSetting) {
-          const currentSetting = formContext.formData.settings[formContext.currentIndex];
-          if (currentSetting) {
-            formContext.handleUpdateSetting(formContext.currentIndex, {
-              ...currentSetting,
-              appId: newAppId,
-              targetField: '' // フィールドをリセット
-            });
-          }
-        }
-      };
-
-      return (
-        <FormControl fullWidth>
-          <InputLabel>対象アプリ</InputLabel>
-          <Select
-            value={value || ''}
-            onChange={(e) => handleAppChange(e.target.value)}
-            label="対象アプリ"
-          >
-            <MenuItem value="">
-              <em>選択してください</em>
-            </MenuItem>
-            {apps.map((app) => (
-              <MenuItem key={app.appId} value={app.appId}>
-                {app.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      );
-    },
-    fieldSelector: (props: any) => {
-      const { value, onChange, formContext, idSchema, formData } = props;
-      const [fields, setFields] = useState<any[]>([]);
-      const [loading, setLoading] = useState(false);
-      const [cache] = useState(() => Cache.getInstance());
-
-      // 同じ配列内のappIdを取得
-      const getCurrentAppId = () => {
-        // タブUIの場合はcurrentSettingから取得
-        if (formContext?.currentSetting) {
-          return formContext.currentSetting.appId;
-        }
-        // 通常の配列UIの場合（フォールバック）
-        const id = idSchema?.$id || '';
-        const match = id.match(/settings_(\d+)_targetField/);
-        if (match) {
-          const index = parseInt(match[1]);
-          return formContext?.formData?.settings?.[index]?.appId;
-        }
-        return null;
-      };
-
-      const appId = getCurrentAppId();
-
-      useEffect(() => {
-        const loadFields = async () => {
-          if (!appId) {
-            setFields([]);
-            return;
-          }
-
-          setLoading(true);
-          try {
-            const properties = await cache.getFormFields(appId);
-            const fieldOptions = Object.entries(properties)
-              .filter(([, field]: [string, any]) => {
-                // 表示可能なフィールドタイプのみ選択可能にする
-                const allowedTypes = [
-                  'SINGLE_LINE_TEXT',
-                  'MULTI_LINE_TEXT',
-                  'NUMBER',
-                  'CALC',
-                  'RADIO_BUTTON',
-                  'DROP_DOWN',
-                  'DATE',
-                  'TIME',
-                  'DATETIME',
-                  'LINK',
-                  'RICH_TEXT'
-                ];
-                return allowedTypes.includes(field.type);
-              })
-              .map(([code, field]: [string, any]) => ({
-                code,
-                label: field.label || code
-              }));
-            setFields(fieldOptions);
-          } catch (error) {
-            console.error('Failed to load fields:', error);
-            setFields([]);
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        loadFields();
-      }, [appId, cache]);
-
-      return (
-        <FormControl fullWidth disabled={!appId || loading}>
-          <InputLabel>対象フィールド</InputLabel>
-          <Select
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            label="対象フィールド"
-          >
-            <MenuItem value="">
-              <em>選択してください</em>
-            </MenuItem>
-            {fields.map((field) => (
-              <MenuItem key={field.code} value={field.code}>
-                {field.label}
-              </MenuItem>
-            ))}
-          </Select>
-          {loading && <div>フィールドを読み込み中...</div>}
-        </FormControl>
-      );
-    },
   };
 
   // 個別の設定用スキーマを作成
@@ -337,7 +182,8 @@ const ConfigForm: React.FC<AppProps> = ({
       properties: {
         name: configSchema.properties.settings.items.properties.name,
         appId: configSchema.properties.settings.items.properties.appId,
-        targetField: configSchema.properties.settings.items.properties.targetField,
+        targetField:
+          configSchema.properties.settings.items.properties.targetField,
         prefix: configSchema.properties.settings.items.properties.prefix,
       },
       required: configSchema.properties.settings.items.required,
@@ -359,13 +205,13 @@ const ConfigForm: React.FC<AppProps> = ({
   return (
     <Box>
       <Paper sx={{ mt: 2 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs value={currentTab} onChange={handleTabChange}>
             {formData.settings.map((setting, index) => (
               <Tab
                 key={index}
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <span>{setting.name || `設定 ${index + 1}`}</span>
                     {formData.settings.length > 1 && (
                       <IconButton
@@ -395,7 +241,12 @@ const ConfigForm: React.FC<AppProps> = ({
               uiSchema={settingUiSchema}
               validator={validator}
               formData={setting}
-              formContext={{ formData: formData, currentSetting: setting, currentIndex: index, handleUpdateSetting }}
+              formContext={{
+                formData: formData,
+                currentSetting: setting,
+                currentIndex: index,
+                handleUpdateSetting,
+              }}
               onChange={(e) => handleUpdateSetting(index, e.formData)}
               onError={log("errors")}
               widgets={customWidgets}
@@ -406,7 +257,7 @@ const ConfigForm: React.FC<AppProps> = ({
         ))}
 
         {formData.settings.length === 0 && (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Box sx={{ p: 3, textAlign: "center" }}>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -439,7 +290,9 @@ const ConfigForm: React.FC<AppProps> = ({
         <Button
           variant="contained"
           color="primary"
-          onClick={() => handleSubmit({ formData } as IChangeEvent<ConfigSchema>)}
+          onClick={() =>
+            handleSubmit({ formData } as IChangeEvent<ConfigSchema>)
+          }
           disabled={formData.settings.length === 0}
         >
           保存

@@ -1,15 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Stack,
+import React, { useEffect, useState } from "react";
+
+import {
   CircularProgress,
-  Typography 
-} from '@mui/material';
-import { Cache } from '../../shared/util/cache';
-import type { KintoneApp } from '@kintone/rest-api-client/lib/src/client/types';
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  Typography,
+} from "@mui/material";
+
+import { Cache } from "../../shared/util/cache";
+
+interface KintoneApp {
+  appId: string;
+  code: string;
+  name: string;
+  description: string;
+  spaceId: string | null;
+  threadId: string | null;
+  createdAt: string;
+  creator: {
+    code: string;
+    name: string;
+  };
+  modifiedAt: string;
+  modifier: {
+    code: string;
+    name: string;
+  };
+}
 
 interface AppFieldValue {
   appId: string;
@@ -27,13 +47,17 @@ interface AppFieldSelectorProps {
   onChange: (value: any) => void;
 }
 
-export const AppFieldSelector: React.FC<AppFieldSelectorProps> = ({ id, value, onChange }) => {
+export const AppFieldSelector: React.FC<AppFieldSelectorProps> = ({
+  id,
+  value,
+  onChange,
+}) => {
   const [apps, setApps] = useState<KintoneApp[]>([]);
   const [fields, setFields] = useState<FieldOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [cache] = useState(() => Cache.getInstance());
-  
-  const currentValue: AppFieldValue = value || { appId: '', targetField: '' };
+
+  const currentValue: AppFieldValue = value || { appId: "", targetField: "" };
 
   useEffect(() => {
     const initCache = async () => {
@@ -54,14 +78,14 @@ export const AppFieldSelector: React.FC<AppFieldSelectorProps> = ({ id, value, o
       try {
         const properties = await cache.getFormFields(currentValue.appId);
         const fieldOptions = Object.entries(properties)
-          .filter(([, field]) => field.type === 'SINGLE_LINE_TEXT')
+          .filter(([, field]) => field.type === "SINGLE_LINE_TEXT")
           .map(([code, field]) => ({
             code,
-            label: field.label || code
+            label: field.label || code,
           }));
         setFields(fieldOptions);
       } catch (error) {
-        console.error('Failed to load fields:', error);
+        console.error("Failed to load fields:", error);
         setFields([]);
       } finally {
         setLoading(false);
@@ -75,14 +99,14 @@ export const AppFieldSelector: React.FC<AppFieldSelectorProps> = ({ id, value, o
     onChange({
       ...currentValue,
       appId,
-      targetField: '' // Reset field when app changes
+      targetField: "", // Reset field when app changes
     });
   };
 
   const handleFieldChange = (targetField: string) => {
     onChange({
       ...currentValue,
-      targetField
+      targetField,
     });
   };
 
