@@ -3,6 +3,12 @@
 ## 概要
 ConfigForm.tsxは、kintone-plugin-templateの設定画面のメインコンポーネントです。タブベースのUIで複数の設定を管理し、動的なフィールド選択機能を提供します。
 
+## アーキテクチャの改善点
+このコンポーネントは、Reactのベストプラクティスに従い、以下の改善が行われています：
+- **カスタムウィジェットの外部化**: `CustomWidgets.tsx`として分離し、レンダリング最適化を実現
+- **型安全性の向上**: 独自のKintoneApp型定義により、外部ライブラリ依存を削減
+- **コードの保守性向上**: 関心の分離により、各コンポーネントの責任を明確化
+
 ## コンポーネント構造の全体像
 
 ```mermaid
@@ -19,9 +25,9 @@ graph TB
             ActionButtons["アクションボタン<br/>(Import/Export/Save)"]
         end
         
-        subgraph "カスタムウィジェット"
-            AppSelector["appSelector"]
-            FieldSelector["fieldSelector"]
+        subgraph "カスタムウィジェット (外部ファイル)"
+            AppSelector["appSelector<br/>(CustomWidgets.tsx)"]
+            FieldSelector["fieldSelector<br/>(CustomWidgets.tsx)"]
         end
         
         subgraph "外部連携"
@@ -60,12 +66,14 @@ import Ajv from "ajv";
 import configSchema from "../shared/jsonSchema/config.schema.json";
 import { KintoneSdk } from "../shared/util/kintoneSdk";
 import { KintoneUtil } from "../shared/util/KintoneUtil";
-import { Cache } from "../shared/util/cache";
+
+// カスタムウィジェットのインポート (外部ファイル)
+import { customWidgets } from "./widgets/CustomWidgets";
 
 // 型定義
 interface AppProps {
   pluginId: string;                    // プラグインID
-  kintoneSdk: KintoneSdk;             // SDK インスタンス
+  kintoneSdk: KintoneSdk;             // SDK インスタンス (※修正により未使用)
   kintoneUtil: typeof KintoneUtil;     // ユーティリティ関数
 }
 ```
@@ -182,9 +190,55 @@ const handleUpdateSetting = (index: number, settingData: any) => {
 };
 ```
 
-## 5. カスタムウィジェットの実装
+## 5. カスタムウィジェットの実装（外部ファイル化）
 
-### appSelectorウィジェット
+### アーキテクチャの変更
+パフォーマンス向上とコードの保守性向上のため、カスタムウィジェットを外部ファイル `CustomWidgets.tsx` に分離しました。
+
+```mermaid
+graph LR
+    subgraph "Before (問題のある実装)"
+        ConfigForm1["ConfigForm.tsx"] --> InlineWidgets["インラインウィジェット<br/>(毎レンダリング時に再作成)"]
+    end
+    
+    subgraph "After (改善された実装)"
+        ConfigForm2["ConfigForm.tsx"] --> ExternalWidgets["CustomWidgets.tsx<br/>(コンポーネント外で定義)"]
+    end
+```
+
+### CustomWidgets.tsx の構造
+
+```typescript
+// CustomWidgets.tsx
+import { RegistryWidgetsType } from "@rjsf/utils";
+
+const AppSelector = (props: any) => {
+  // appSelector実装
+};
+
+const FieldSelector = (props: any) => {
+  // fieldSelector実装  
+};
+
+export const customWidgets: RegistryWidgetsType = {
+  appSelector: AppSelector,
+  fieldSelector: FieldSelector,
+};
+```
+
+### 利用方法
+```typescript
+// ConfigForm.tsx
+import { customWidgets } from "./widgets/CustomWidgets";
+
+// react-jsonschema-formで使用
+<Form
+  widgets={customWidgets}
+  // その他のprops
+/>
+```
+
+### AppSelectorウィジェット
 
 ```mermaid
 graph TB
@@ -205,11 +259,12 @@ graph TB
 ```
 
 主な特徴：
+- **外部コンポーネント化**: レンダリング最適化により不要な再作成を防止
 - Cacheクラスを使用してアプリ一覧を取得
 - アプリ変更時に関連するtargetFieldを自動リセット
 - formContextを通じて親コンポーネントと連携
 
-### fieldSelectorウィジェット
+### FieldSelectorウィジェット
 
 ```mermaid
 graph TB
@@ -240,12 +295,19 @@ const getCurrentAppId = () => {
   const id = idSchema?.$id || '';
   const match = id.match(/settings_(\d+)_targetField/);
   if (match) {
-    const index = parseInt(match[1]);
+    const index = parseInt(match[1], 10); // radixパラメータを明示
     return formContext?.formData?.settings?.[index]?.appId;
   }
   return null;
 };
 ```
+
+### 外部化による利点
+
+1. **パフォーマンス向上**: コンポーネントの不要な再作成を防止
+2. **Reactルール準拠**: ESLintの`react/no-unstable-nested-components`ルールに対応
+3. **保守性向上**: 各ウィジェットを独立してテスト・修正可能
+4. **再利用性**: 他のコンポーネントからも利用可能
 
 ## 6. 保存処理
 
@@ -322,7 +384,7 @@ const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const importedConfig = JSON.parse(e.target?.result as string);
+        const importedConfig = JSON.parse(e.target?.result as string) as ConfigSchema;
         const valid = validate(importedConfig);
         if (!valid) {
           console.error("Validation errors:", validate.errors);
@@ -380,6 +442,22 @@ ConfigForm.tsxの主な機能：
 3. **データ永続化**: kintone Plugin APIを使用した設定の保存
 4. **インポート/エクスポート**: 設定のバックアップと復元
 5. **バリデーション**: JSON Schemaベースの自動検証
-6. **カスタムウィジェット**: 独自のUI部品による拡張性
+6. **カスタムウィジェット**: 外部ファイル化による最適化された独自UI部品
+7. **型安全性**: TypeScript厳格モードによる高い品質保証
 
-この実装により、ユーザーフレンドリーで拡張可能な設定画面が実現されています。
+## 改善後のメリット
+
+### パフォーマンス
+- カスタムウィジェットの外部化により、不要な再レンダリングを削減
+- メモリ使用量の最適化
+
+### 保守性
+- 各コンポーネントの責任が明確化
+- 単体テストの実装が容易
+- ESLint/TypeScriptルールへの完全準拠
+
+### 拡張性
+- 新しいウィジェットの追加が簡単
+- 他のコンポーネントからの再利用が可能
+
+この実装により、Reactのベストプラクティスに従った、ユーザーフレンドリーで拡張可能かつ高品質な設定画面が実現されています。

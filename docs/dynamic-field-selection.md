@@ -3,6 +3,12 @@
 ## 概要
 このドキュメントでは、アプリ選択に連動してフィールドのドロップダウンが動的に更新される仕組みを解説します。この実装により、各タブの設定が独立して動作し、他のタブに影響を与えることなくフィールド選択が可能になります。
 
+## アーキテクチャの改善点
+カスタムウィジェットを外部ファイル（`CustomWidgets.tsx`）に分離することで、以下の改善を実現：
+- **パフォーマンス向上**: コンポーネントの不要な再作成を防止
+- **保守性向上**: 各ウィジェットを独立してテスト・修正可能
+- **Reactベストプラクティス**: ESLintルールに完全準拠
+
 ## 動的フィールド選択の全体構造
 
 ```mermaid
@@ -12,13 +18,13 @@ graph TB
         FormContext["formContext<br/>・currentSetting<br/>・currentIndex<br/>・handleUpdateSetting"]
     end
     
-    subgraph "カスタムウィジェット"
-        subgraph "appSelector"
+    subgraph "カスタムウィジェット (CustomWidgets.tsx)"
+        subgraph "AppSelector"
             AppDropdown["アプリ選択<br/>ドロップダウン"]
             AppChange["onChange: アプリID変更"]
         end
         
-        subgraph "fieldSelector"
+        subgraph "FieldSelector"
             FieldDropdown["フィールド選択<br/>ドロップダウン"]
             LoadFields["フィールド読み込み"]
         end
@@ -48,7 +54,7 @@ graph TB
     classDef cache fill:#fff3e0,stroke:#ff9800,stroke-width:2px
     classDef api fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
     
-    class appSelector,fieldSelector widget
+    class AppSelector,FieldSelector widget
     class AppCache,FieldCache cache
     class API api
 ```
@@ -60,9 +66,9 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant User as ユーザー
-    participant AppSel as appSelector
+    participant AppSel as AppSelector
     participant Cache as Cacheクラス
-    participant FieldSel as fieldSelector
+    participant FieldSel as FieldSelector
     participant API as kintone API
     
     User->>AppSel: アプリを選択
@@ -91,67 +97,97 @@ sequenceDiagram
 
 ## 実装の詳細解説
 
-### 1. appSelectorウィジェット
+### 0. ファイル構成の改善
+
+カスタムウィジェットを外部ファイル化：
 
 ```typescript
-const customWidgets: RegistryWidgetsType = {
-  appSelector: (props: any) => {
-    const { value, onChange, formContext } = props;
-    const [apps, setApps] = useState<any[]>([]);
-    const [cache] = useState(() => Cache.getInstance());
+// CustomWidgets.tsx
+import { RegistryWidgetsType } from "@rjsf/utils";
 
-    // 初回レンダリング時にアプリ一覧を取得
-    useEffect(() => {
-      const loadApps = async () => {
-        await cache.init();
-        setApps(cache.getApps());
-      };
-      loadApps();
-    }, [cache]);
+const AppSelector = (props: any) => {
+  // AppSelector実装
+};
 
-    const handleAppChange = (newAppId: string) => {
-      onChange(newAppId);  // ① 新しいappIdを保存
-      
-      // ② targetFieldをリセット
-      if (formContext?.currentIndex !== undefined && 
-          formContext?.handleUpdateSetting) {
-        const currentSetting = formContext.formData.settings[formContext.currentIndex];
-        if (currentSetting) {
-          formContext.handleUpdateSetting(formContext.currentIndex, {
-            ...currentSetting,
-            appId: newAppId,
-            targetField: ''  // ← ここがポイント！
-          });
-        }
-      }
+const FieldSelector = (props: any) => {
+  // FieldSelector実装
+};
+
+export const customWidgets: RegistryWidgetsType = {
+  appSelector: AppSelector,
+  fieldSelector: FieldSelector,
+};
+```
+
+```typescript
+// ConfigForm.tsx
+import { customWidgets } from "./widgets/CustomWidgets";
+
+// react-jsonschema-formで使用
+<Form widgets={customWidgets} />
+```
+
+### 1. AppSelectorウィジェット
+
+```typescript
+const AppSelector = (props: any) => {
+  const { value, onChange, formContext } = props;
+  const [apps, setApps] = useState<any[]>([]);
+  const [cache] = useState(() => Cache.getInstance());
+
+  // 初回レンダリング時にアプリ一覧を取得
+  useEffect(() => {
+    const loadApps = async () => {
+      await cache.init();
+      setApps(cache.getApps());
     };
+    loadApps();
+  }, [cache]);
 
-    return (
-      <FormControl fullWidth>
-        <InputLabel>対象アプリ</InputLabel>
-        <Select
-          value={value || ''}
-          onChange={(e) => handleAppChange(e.target.value)}
-          label="対象アプリ"
-        >
-          {/* アプリ一覧の表示 */}
-        </Select>
-      </FormControl>
-    );
-  },
+  const handleAppChange = (newAppId: string) => {
+    onChange(newAppId);  // ① 新しいappIdを保存
+    
+    // ② targetFieldをリセット
+    if (formContext?.currentIndex !== undefined && 
+        formContext?.handleUpdateSetting) {
+      const currentSetting = formContext.formData.settings[formContext.currentIndex];
+      if (currentSetting) {
+        formContext.handleUpdateSetting(formContext.currentIndex, {
+          ...currentSetting,
+          appId: newAppId,
+          targetField: ""  // ← ここがポイント！
+        });
+      }
+    }
+  };
+
+  return (
+    <FormControl fullWidth>
+      <InputLabel>対象アプリ</InputLabel>
+      <Select
+        value={value || ""}
+        onChange={(e) => handleAppChange(e.target.value)}
+        label="対象アプリ"
+      >
+        {/* アプリ一覧の表示 */}
+      </Select>
+    </FormControl>
+  );
+};
 ```
 
 **ポイント解説：**
+- **外部コンポーネント化**: レンダリング最適化により不要な再作成を防止
 - `Cache.getInstance()`: シングルトンパターンでキャッシュインスタンスを取得
 - `handleAppChange`: アプリ変更時に2つの処理を実行
   - ① 新しいappIdを保存
   - ② 関連するtargetFieldを空にリセット（重要！）
 
-### 2. fieldSelectorウィジェット
+### 2. FieldSelectorウィジェット
 
 ```typescript
-fieldSelector: (props: any) => {
-  const { value, onChange, formContext, idSchema, formData } = props;
+const FieldSelector = (props: any) => {
+  const { value, onChange, formContext, idSchema } = props;
   const [fields, setFields] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [cache] = useState(() => Cache.getInstance());
@@ -163,10 +199,10 @@ fieldSelector: (props: any) => {
       return formContext.currentSetting.appId;
     }
     // 通常の配列UIの場合（フォールバック）
-    const id = idSchema?.$id || '';
+    const id = idSchema?.$id || "";
     const match = id.match(/settings_(\d+)_targetField/);
     if (match) {
-      const index = parseInt(match[1]);
+      const index = parseInt(match[1], 10); // radixパラメータを明示
       return formContext?.formData?.settings?.[index]?.appId;
     }
     return null;
@@ -189,20 +225,27 @@ fieldSelector: (props: any) => {
           .filter(([, field]: [string, any]) => {
             // 表示可能なフィールドタイプのみ選択可能にする
             const allowedTypes = [
-              'SINGLE_LINE_TEXT',
-              'MULTI_LINE_TEXT',
-              'NUMBER',
-              // ... その他のタイプ
+              "SINGLE_LINE_TEXT",
+              "MULTI_LINE_TEXT",
+              "NUMBER",
+              "CALC",
+              "RADIO_BUTTON",
+              "DROP_DOWN",
+              "DATE",
+              "TIME",
+              "DATETIME",
+              "LINK",
+              "RICH_TEXT",
             ];
             return allowedTypes.includes(field.type);
           })
           .map(([code, field]: [string, any]) => ({
             code,
-            label: field.label || code
+            label: field.label || code,
           }));
         setFields(fieldOptions);
       } catch (error) {
-        console.error('Failed to load fields:', error);
+        console.error("Failed to load fields:", error);
         setFields([]);
       } finally {
         setLoading(false);
@@ -217,7 +260,7 @@ fieldSelector: (props: any) => {
       {/* フィールド選択UI */}
     </FormControl>
   );
-},
+};
 ```
 
 ### 3. Cacheクラスの実装
@@ -354,10 +397,26 @@ useEffect(() => {
 
 動的フィールド選択の実装における重要な要素：
 
-1. **カスタムウィジェット**: react-jsonschema-formのウィジェットシステムを活用
-2. **formContext**: 親子コンポーネント間のデータ共有
-3. **キャッシュ機構**: API呼び出しの最適化
-4. **useEffect**: appId変更の監視と非同期処理
-5. **独立性**: 各タブが他のタブに影響を与えない設計
+1. **外部ファイル化**: CustomWidgets.tsxによるパフォーマンス最適化
+2. **カスタムウィジェット**: react-jsonschema-formのウィジェットシステムを活用
+3. **formContext**: 親子コンポーネント間のデータ共有
+4. **キャッシュ機構**: API呼び出しの最適化
+5. **useEffect**: appId変更の監視と非同期処理
+6. **独立性**: 各タブが他のタブに影響を与えない設計
+7. **型安全性**: TypeScript厳格モードでの品質保証
 
-この実装により、ユーザーフレンドリーで効率的な設定画面が実現されています。
+## 改善による効果
+
+### パフォーマンス向上
+- カスタムウィジェットの外部化により、不要な再レンダリングを削減
+- メモリ使用量の最適化
+
+### 保守性向上
+- 各ウィジェットを独立してテスト・修正可能
+- ESLint/TypeScriptルールへの完全準拠
+
+### 開発体験の向上
+- コンポーネントの責任が明確化
+- デバッグとトラブルシューティングが容易
+
+この実装により、Reactのベストプラクティスに従った、ユーザーフレンドリーで効率的かつ高品質な設定画面が実現されています。
