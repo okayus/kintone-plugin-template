@@ -1,11 +1,8 @@
 import type { ConfigSchema } from "../../shared/types/Config";
 
-export interface Setting {
-  name: string;
-  appId: string;
-  targetField: string;
-  prefix: string;
-}
+// Auto-derive ConfigSetting type from ConfigSchema for better maintainability
+// This ensures schema and types stay in sync automatically
+export type ConfigSetting = ConfigSchema["settings"][number];
 
 export interface ConfigFormState {
   formData: ConfigSchema;
@@ -18,7 +15,7 @@ export interface ConfigFormActions {
   handleTabChange: (event: React.SyntheticEvent, newValue: number) => void;
   handleAddTab: () => void;
   handleDeleteTab: (index: number) => void;
-  handleUpdateSetting: (index: number, settingData: Setting) => void;
+  handleUpdateSetting: (index: number, settingData: ConfigSetting) => void;
 }
 
 export interface ConfigFormProps {
