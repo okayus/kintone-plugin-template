@@ -4,6 +4,7 @@ import {
   addSetting,
   adjustCurrentTab,
   calculateNewTabIndex,
+  createDefaultCommonSetting,
   deleteSetting,
   updateSetting,
 } from "../utils/configUtils";
@@ -11,7 +12,12 @@ import {
 import type { ConfigSchema } from "../../shared/types/Config";
 import type { ConfigFormState, ConfigSetting } from "../types/ConfigFormTypes";
 
-export const useConfigData = (initialData: ConfigSchema = { settings: [] }) => {
+export const useConfigData = (
+  initialData: ConfigSchema = {
+    settings: [],
+    commonSetting: createDefaultCommonSetting(),
+  },
+) => {
   const [formData, setFormData] = useState<ConfigSchema>(initialData);
   const [currentTab, setCurrentTab] = useState(0);
 
@@ -42,6 +48,14 @@ export const useConfigData = (initialData: ConfigSchema = { settings: [] }) => {
 
     handleUpdateSetting: (index: number, settingData: ConfigSetting) => {
       const newFormData = updateSetting(formData, index, settingData);
+      setFormData(newFormData);
+    },
+
+    handleUpdateCommonSetting: (commonSettingData: any) => {
+      const newFormData = {
+        ...formData,
+        commonSetting: commonSettingData,
+      };
       setFormData(newFormData);
     },
   };

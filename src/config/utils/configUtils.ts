@@ -65,17 +65,34 @@ export const calculateNewTabIndex = (settingsLength: number): number =>
   settingsLength;
 
 /**
+ * 共通設定のデフォルト値を生成する純粋関数
+ */
+export const createDefaultCommonSetting = () => ({
+  prefix: "",
+});
+
+/**
  * レガシー設定データを新形式に変換する純粋関数
  */
 export const convertLegacyConfig = (parsedConfig: any): ConfigSchema => {
   // 旧形式のデータをサポート
   if (parsedConfig.config) {
-    return parsedConfig.config;
+    const config = parsedConfig.config;
+    return {
+      ...config,
+      commonSetting: config.commonSetting || createDefaultCommonSetting(),
+    };
   }
   if (parsedConfig.settings) {
-    return parsedConfig;
+    return {
+      ...parsedConfig,
+      commonSetting: parsedConfig.commonSetting || createDefaultCommonSetting(),
+    };
   }
-  return { settings: [] };
+  return {
+    settings: [],
+    commonSetting: createDefaultCommonSetting(),
+  };
 };
 
 /**

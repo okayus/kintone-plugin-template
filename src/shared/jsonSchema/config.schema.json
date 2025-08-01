@@ -1,6 +1,17 @@
 {
   "type": "object",
   "properties": {
+    "commonSetting": {
+      "type": "object",
+      "title": "共通設定",
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "title": "通知メッセージのプレフィックス"
+        }
+      },
+      "additionalProperties": false
+    },
     "settings": {
       "type": "array",
       "title": "通知設定",

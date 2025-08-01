@@ -8,6 +8,7 @@ import { KintoneUtil } from "../shared/util/KintoneUtil";
 
 // Components
 import { ActionButtons } from "./components/ActionButtons";
+import { CommonSettingForm } from "./components/CommonSettingForm";
 import { SettingForm } from "./components/SettingForm";
 import { TabHeader } from "./components/TabHeader";
 // Hooks
@@ -19,6 +20,8 @@ import { FileService } from "./services/FileService";
 import { ValidationService } from "./services/ValidationService";
 // Utils
 import {
+  createCommonSettingSchema,
+  createCommonSettingUiSchema,
   createSettingSchema,
   createSettingUiSchema,
 } from "./utils/schemaUtils";
@@ -52,6 +55,8 @@ const ConfigForm: React.FC<AppProps> = ({ pluginId, kintoneUtil }) => {
   // Schema generation
   const schema = useMemo(() => createSettingSchema(), []);
   const uiSchema = useMemo(() => createSettingUiSchema(), []);
+  const commonSchema = useMemo(() => createCommonSettingSchema(), []);
+  const commonUiSchema = useMemo(() => createCommonSettingUiSchema(), []);
 
   // Event handlers
   const onSubmit = () => handleSubmit(formData);
@@ -61,6 +66,15 @@ const ConfigForm: React.FC<AppProps> = ({ pluginId, kintoneUtil }) => {
 
   return (
     <Box>
+      {/* 共通設定セクション */}
+      <CommonSettingForm
+        formData={formData}
+        schema={commonSchema}
+        uiSchema={commonUiSchema}
+        onUpdateCommonSetting={actions.handleUpdateCommonSetting}
+      />
+
+      {/* 個別設定タブセクション */}
       <Paper sx={{ mt: 2 }}>
         <TabHeader
           formData={formData}
