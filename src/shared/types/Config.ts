@@ -6,16 +6,21 @@
  */
 
 export type NoName1 = string;
-export type NoName2 = string;
 export type NoName3 = string;
 export type NoName4 = string;
-export type NoName = {
-  name: NoName1;
-  appId: NoName2;
-  targetField: NoName3;
-  prefix: NoName4;
+export type NoName5 = string;
+export type NoName6 = string;
+export type NoName2 = {
+  name: NoName3;
+  appId: NoName4;
+  targetField: NoName5;
+  prefix: NoName6;
 }[];
 
 export interface ConfigSchema {
-  settings: NoName;
+  commonSetting?: NoName;
+  settings: NoName2;
+}
+export interface NoName {
+  prefix?: NoName1;
 }
