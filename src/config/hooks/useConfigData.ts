@@ -9,7 +9,7 @@ import {
 } from "../utils/configUtils";
 
 import type { ConfigSchema } from "../../shared/types/Config";
-import type { ConfigFormState, Setting } from "../types/ConfigFormTypes";
+import type { ConfigFormState, ConfigSetting } from "../types/ConfigFormTypes";
 
 export const useConfigData = (initialData: ConfigSchema = { settings: [] }) => {
   const [formData, setFormData] = useState<ConfigSchema>(initialData);
@@ -40,7 +40,7 @@ export const useConfigData = (initialData: ConfigSchema = { settings: [] }) => {
       setCurrentTab(adjustCurrentTab(currentTab, newFormData.settings.length));
     },
 
-    handleUpdateSetting: (index: number, settingData: Setting) => {
+    handleUpdateSetting: (index: number, settingData: ConfigSetting) => {
       const newFormData = updateSetting(formData, index, settingData);
       setFormData(newFormData);
     },

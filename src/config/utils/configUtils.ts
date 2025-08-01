@@ -1,10 +1,10 @@
 import type { ConfigSchema } from "../../shared/types/Config";
-import type { Setting } from "../types/ConfigFormTypes";
+import type { ConfigSetting } from "../types/ConfigFormTypes";
 
 /**
  * 新しい設定項目を作成する純粋関数
  */
-export const createNewSetting = (index: number): Setting => ({
+export const createNewSetting = (index: number): ConfigSetting => ({
   name: `設定 ${index + 1}`,
   appId: "",
   targetField: "",
@@ -38,7 +38,7 @@ export const deleteSetting = (
 export const updateSetting = (
   formData: ConfigSchema,
   index: number,
-  settingData: Setting,
+  settingData: ConfigSetting,
 ): ConfigSchema => {
   const newSettings = [...formData.settings];
   newSettings[index] = settingData;

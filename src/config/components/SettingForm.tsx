@@ -7,7 +7,7 @@ import validator from "@rjsf/validator-ajv8";
 import { customWidgets } from "../widgets/CustomWidgets";
 
 import type { ConfigSchema } from "../../shared/types/Config";
-import type { Setting } from "../types/ConfigFormTypes";
+import type { ConfigSetting } from "../types/ConfigFormTypes";
 import type { RJSFSchema } from "@rjsf/utils";
 
 const log = (type: string) => console.log.bind(console, type);
@@ -39,7 +39,7 @@ interface SettingFormProps {
   currentTab: number;
   schema: RJSFSchema;
   uiSchema: any;
-  onUpdateSetting: (index: number, settingData: Setting) => void;
+  onUpdateSetting: (index: number, settingData: ConfigSetting) => void;
 }
 
 export const SettingForm: React.FC<SettingFormProps> = ({
