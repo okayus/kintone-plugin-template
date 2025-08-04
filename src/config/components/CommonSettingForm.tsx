@@ -8,13 +8,16 @@ import validator from "@rjsf/validator-ajv8";
 import { customWidgets } from "../widgets/CustomWidgets";
 
 import type { ConfigSchema } from "../../shared/types/Config";
+import type { IChangeEvent } from "@rjsf/core";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 
 interface CommonSettingFormProps {
   formData: ConfigSchema;
   schema: RJSFSchema;
   uiSchema: UiSchema;
-  onUpdateCommonSetting: (commonSettingData: any) => void;
+  onUpdateCommonSetting: (
+    commonSettingData: ConfigSchema["commonSetting"],
+  ) => void;
 }
 
 export const CommonSettingForm: React.FC<CommonSettingFormProps> = ({
@@ -23,8 +26,10 @@ export const CommonSettingForm: React.FC<CommonSettingFormProps> = ({
   uiSchema,
   onUpdateCommonSetting,
 }) => {
-  const handleChange = ({ formData: newCommonSetting }: any) => {
-    onUpdateCommonSetting(newCommonSetting);
+  const handleChange = (
+    changeEvent: IChangeEvent<ConfigSchema["commonSetting"]>,
+  ) => {
+    onUpdateCommonSetting(changeEvent.formData);
   };
 
   return (
