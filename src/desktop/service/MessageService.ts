@@ -6,6 +6,12 @@ import type {
   Record,
 } from "@kintone/rest-api-client/lib/src/client/types";
 
+// 設定とレコードのペア
+interface SettingRecordPair {
+  setting: ConfigSchema["settings"][number];
+  records: Record[];
+}
+
 export class MessageService {
   private config: ConfigSchema;
   private kintoneSdk: KintoneSdk;
@@ -27,11 +33,9 @@ export class MessageService {
     return records;
   }
 
-  public async fetchRecordsFromSettings(): Promise<
-    Array<{ setting: any; records: Record[] }>
-  > {
+  public async fetchRecordsFromSettings(): Promise<SettingRecordPair[]> {
     // 設定されたすべてのアプリからレコードを取得し、設定と紐付けて返す
-    const allResults: Array<{ setting: any; records: Record[] }> = [];
+    const allResults: SettingRecordPair[] = [];
 
     for (const setting of this.config.settings) {
       if (setting.appId && setting.targetField) {
@@ -57,9 +61,7 @@ export class MessageService {
     return allResults;
   }
 
-  public alertMessage(
-    recordsWithSettings: Array<{ setting: any; records: Record[] }>,
-  ): void {
+  public alertMessage(recordsWithSettings: SettingRecordPair[]): void {
     const totalRecords = recordsWithSettings.reduce(
       (sum, item) => sum + item.records.length,
       0,
@@ -71,8 +73,7 @@ export class MessageService {
     alert(this.generateMessage(recordsWithSettings));
   }
 
-  public generateMessage(
-    recordsWithSettings: Array<{ setting: any; records: Record[] }>,
+  public generateMessage(recordsWithSettings: SettingRecordPair[],
   ): string {
     const messages: string[] = [];
 
