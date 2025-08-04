@@ -51,11 +51,12 @@ export const useConfigData = (
       setFormData(newFormData);
     },
 
-    handleUpdateCommonSetting: (commonSettingData: any) => {
-      const newFormData = {
-        ...formData,
-        commonSetting: commonSettingData,
-      };
+    handleUpdateCommonSetting: (
+      commonSettingData: ConfigSchema["commonSetting"],
+    ) => {
+      const newFormData: ConfigSchema = commonSettingData
+        ? { ...formData, commonSetting: commonSettingData }
+        : { ...formData };
       setFormData(newFormData);
     },
   };
