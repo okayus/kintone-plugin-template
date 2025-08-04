@@ -1,9 +1,11 @@
+import type { KintonePluginConfig } from "../types/KintoneTypes";
+
 export class KintoneUtil {
-  static getConfig(pluginId: string): any {
+  static getConfig(pluginId: string): KintonePluginConfig {
     return kintone.plugin.app.getConfig(pluginId);
   }
 
-  static setConfig(config: any, callback: () => void): void {
+  static setConfig(config: KintonePluginConfig, callback: () => void): void {
     kintone.plugin.app.setConfig(config, callback);
   }
 

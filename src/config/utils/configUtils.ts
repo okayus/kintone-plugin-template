@@ -1,3 +1,11 @@
+import {
+  isCurrentConfigSchema,
+  isLegacyConfigV1,
+  isLegacyConfigV2,
+  isValidConfigObject,
+  type LegacyConfig,
+} from "../types/LegacyConfigTypes";
+
 import type { ConfigSchema } from "../../shared/types/Config";
 import type { ConfigSetting } from "../types/ConfigFormTypes";
 
@@ -73,22 +81,37 @@ export const createDefaultCommonSetting = () => ({
 
 /**
  * レガシー設定データを新形式に変換する純粋関数
+ * 型ガードを使用して安全に変換を行う
  */
-export const convertLegacyConfig = (parsedConfig: any): ConfigSchema => {
-  // 旧形式のデータをサポート
-  if (parsedConfig.config) {
+export const convertLegacyConfig = (
+  parsedConfig: LegacyConfig,
+): ConfigSchema => {
+  // 不正なデータの場合はデフォルト値を返す
+  if (!isValidConfigObject(parsedConfig)) {
+    return {
+      settings: [],
+      commonSetting: createDefaultCommonSetting(),
+    };
+  }
+
+  // レガシー設定 V1 形式 (config プロパティでラップされた形式)
+  if (isLegacyConfigV1(parsedConfig)) {
     const config = parsedConfig.config;
     return {
       ...config,
       commonSetting: config.commonSetting || createDefaultCommonSetting(),
     };
   }
-  if (parsedConfig.settings) {
+
+  // レガシー設定 V2 形式 または 現在の形式
+  if (isLegacyConfigV2(parsedConfig) || isCurrentConfigSchema(parsedConfig)) {
     return {
       ...parsedConfig,
       commonSetting: parsedConfig.commonSetting || createDefaultCommonSetting(),
     };
   }
+
+  // 未知の形式の場合はデフォルト値を返す
   return {
     settings: [],
     commonSetting: createDefaultCommonSetting(),
