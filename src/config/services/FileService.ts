@@ -28,7 +28,8 @@ export class FileService implements IFileService {
         const content = e.target?.result as string;
         const result = parseImportedFile(
           content,
-          (data) => this.validationService.validate(data).isValid,
+          (data) =>
+            this.validationService.validate(data as ConfigSchema).isValid,
         );
         resolve(result);
       };
