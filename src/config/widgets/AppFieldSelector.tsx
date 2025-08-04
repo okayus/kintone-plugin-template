@@ -43,8 +43,8 @@ interface FieldOption {
 
 interface AppFieldSelectorProps {
   id?: string;
-  value: any;
-  onChange: (value: any) => void;
+  value: AppFieldValue;
+  onChange: (value: AppFieldValue) => void;
 }
 
 export const AppFieldSelector: React.FC<AppFieldSelectorProps> = ({

@@ -7,11 +7,16 @@ import Select from "@mui/material/Select";
 
 import { Cache } from "../../shared/util/cache";
 
+import type {
+  AppSelectorProps,
+  KintoneApp,
+  KintoneField,
+} from "../types/WidgetTypes";
 import type { RegistryWidgetsType } from "@rjsf/utils";
 
-const AppSelector = (props: any) => {
+const AppSelector = (props: AppSelectorProps) => {
   const { value, onChange, formContext } = props;
-  const [apps, setApps] = useState<any[]>([]);
+  const [apps, setApps] = useState<KintoneApp[]>([]);
   const [cache] = useState(() => Cache.getInstance());
 
   useEffect(() => {
@@ -62,9 +67,11 @@ const AppSelector = (props: any) => {
   );
 };
 
-const FieldSelector = (props: any) => {
+const FieldSelector = (
+  props: AppSelectorProps & { idSchema?: { $id?: string } },
+) => {
   const { value, onChange, formContext, idSchema } = props;
-  const [fields, setFields] = useState<any[]>([]);
+  const [fields, setFields] = useState<KintoneField[]>([]);
   const [loading, setLoading] = useState(false);
   const [cache] = useState(() => Cache.getInstance());
 
@@ -97,7 +104,8 @@ const FieldSelector = (props: any) => {
       try {
         const properties = await cache.getFormFields(appId);
         const fieldOptions = Object.entries(properties)
-          .filter(([, field]: [string, any]) => {
+          .filter(([, field]: [string, unknown]) => {
+            const typedField = field as { type: string };
             // 表示可能なフィールドタイプのみ選択可能にする
             const allowedTypes = [
               "SINGLE_LINE_TEXT",
@@ -112,12 +120,16 @@ const FieldSelector = (props: any) => {
               "LINK",
               "RICH_TEXT",
             ];
-            return allowedTypes.includes(field.type);
+            return allowedTypes.includes(typedField.type);
           })
-          .map(([code, field]: [string, any]) => ({
-            code,
-            label: field.label || code,
-          }));
+          .map(([code, field]: [string, unknown]): KintoneField => {
+            const typedField = field as { label?: string; type: string };
+            return {
+              code,
+              label: typedField.label || code,
+              type: typedField.type,
+            };
+          });
         setFields(fieldOptions);
       } catch (error) {
         console.error("Failed to load fields:", error);
