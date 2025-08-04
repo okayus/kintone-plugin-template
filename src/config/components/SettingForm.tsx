@@ -38,7 +38,7 @@ interface SettingFormProps {
   formData: ConfigSchema;
   currentTab: number;
   schema: RJSFSchema;
-  uiSchema: any;
+  uiSchema: Record<string, unknown>;
   onUpdateSetting: (index: number, settingData: ConfigSetting) => void;
 }
 

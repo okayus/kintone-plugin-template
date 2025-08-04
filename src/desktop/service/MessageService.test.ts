@@ -6,22 +6,41 @@ import { KintoneSdk } from "../../shared/util/kintoneSdk";
 import { MessageService } from "./MessageService";
 
 import type { ConfigSchema } from "../../shared/types/Config";
-import type { Record } from "@kintone/rest-api-client/lib/src/client/types";
+import type { Record as KintoneRecord } from "@kintone/rest-api-client/lib/src/client/types";
 
 vi.mock("../shared/util/kintoneSdk");
+
+// kintone global object type
+interface MockKintone {
+  app: {
+    getId: () => number;
+    getQueryCondition: () => string;
+  };
+  plugin: {
+    app: {
+      getConfig: (pluginId: string) => { [key: string]: string };
+    };
+  };
+}
 
 describe("MessageService", () => {
   let mockkintoneSdk: Mocked<KintoneSdk>;
   let mockRestApiClient: Mocked<KintoneRestAPIClient>;
-  let kintone: any;
+  let kintone: MockKintone;
 
   beforeEach(() => {
     kintone = {
       app: {
-        getQueryCondition: vi.fn(),
+        getId: () => 123,
+        getQueryCondition: () => "",
+      },
+      plugin: {
+        app: {
+          getConfig: () => ({}),
+        },
       },
     };
-    global.kintone = kintone;
+    global.kintone = kintone as any;
 
     mockRestApiClient = {
       record: {
@@ -35,21 +54,20 @@ describe("MessageService", () => {
   describe("fetchRecords", () => {
     it("取得したレコードを返す", async () => {
       const mockConfig: ConfigSchema = {
-        prefix: "",
-        fields: [],
+        settings: [],
       };
 
       const messageService = new MessageService(mockConfig, mockkintoneSdk);
       const appId = "1";
 
-      vi.spyOn(kintone.app, "getQueryCondition").mockReturnValue("");
+      vi.spyOn(kintone.app, "getId").mockReturnValue(123);
       mockkintoneSdk.getRecords.mockResolvedValue({
         records: [
           {
             field1: { type: "SINGLE_LINE_TEXT", value: "value1" },
             field2: { type: "SINGLE_LINE_TEXT", value: "value2" },
           },
-        ] as Record[],
+        ] as KintoneRecord[],
       });
 
       const records = await messageService.fetchRecords(appId);
@@ -65,13 +83,19 @@ describe("MessageService", () => {
   describe("generateMessages", () => {
     it("プレフィックスとフィールド値を含むメッセージを返す", () => {
       const mockConfig: ConfigSchema = {
-        prefix: "prefix\n",
-        fields: ["field1", "field2"],
+        settings: [
+          {
+            name: "設定1",
+            appId: "1",
+            targetField: "field1",
+            prefix: "prefix\n",
+          },
+        ],
       };
 
       const messageService = new MessageService(mockConfig, mockkintoneSdk);
 
-      const records: Record[] = [
+      const records: KintoneRecord[] = [
         {
           field1: {
             type: "SINGLE_LINE_TEXT",
@@ -93,7 +117,13 @@ describe("MessageService", () => {
           },
         },
       ];
-      const message = messageService.generateMessage(records);
+      const recordsWithSettings = [
+        {
+          setting: mockConfig.settings[0],
+          records: records,
+        },
+      ];
+      const message = messageService.generateMessage(recordsWithSettings);
 
       expect(message).toBe("prefix\nvalue1 value2\nvalue3 value4");
     });

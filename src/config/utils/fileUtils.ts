@@ -39,7 +39,7 @@ export const createExportData = (formData: ConfigSchema) => {
  */
 export const parseImportedFile = (
   content: string,
-  validator: (data: any) => boolean,
+  validator: (data: unknown) => boolean,
 ): FileOperationResult => {
   try {
     const importedConfig = JSON.parse(content) as ConfigSchema;

@@ -1,4 +1,5 @@
 import type { ConfigSchema } from "../../shared/types/Config";
+import type { KintoneUtil } from "../../shared/util/KintoneUtil";
 
 // Auto-derive ConfigSetting type from ConfigSchema for better maintainability
 // This ensures schema and types stay in sync automatically
@@ -20,7 +21,7 @@ export interface ConfigFormActions {
 
 export interface ConfigFormProps {
   pluginId: string;
-  kintoneUtil: any;
+  kintoneUtil: typeof KintoneUtil;
 }
 
 export interface FileOperationResult {
@@ -29,7 +30,5 @@ export interface FileOperationResult {
   error?: string;
 }
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors?: any[];
-}
+// ValidationResult は KintoneTypes.ts から再エクスポート
+export type { ValidationResult } from "../../shared/types/KintoneTypes";

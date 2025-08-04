@@ -3,16 +3,20 @@ import Ajv from "ajv";
 import configSchema from "../../shared/jsonSchema/config.schema.json";
 
 import type { ConfigSchema } from "../../shared/types/Config";
-import type { ValidationResult } from "../types/ConfigFormTypes";
+import type {
+  ValidationError,
+  ValidationResult,
+} from "../../shared/types/KintoneTypes";
+import type { ValidateFunction } from "ajv";
 
 export interface IValidationService {
   validate(data: ConfigSchema): ValidationResult;
-  getErrors(): any[] | null;
+  getErrors(): ValidationError[] | null;
 }
 
 export class ValidationService implements IValidationService {
   private ajv: Ajv;
-  private validateFunction: any;
+  private validateFunction: ValidateFunction;
 
   constructor() {
     this.ajv = new Ajv();
@@ -25,7 +29,7 @@ export class ValidationService implements IValidationService {
     if (!isValid) {
       return {
         isValid: false,
-        errors: this.validateFunction.errors,
+        errors: (this.validateFunction.errors as ValidationError[]) || [],
       };
     }
 
@@ -34,7 +38,7 @@ export class ValidationService implements IValidationService {
     };
   }
 
-  getErrors(): any[] | null {
-    return this.validateFunction.errors || null;
+  getErrors(): ValidationError[] | null {
+    return (this.validateFunction.errors as ValidationError[]) || null;
   }
 }

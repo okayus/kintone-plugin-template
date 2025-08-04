@@ -18,7 +18,7 @@ export class ConfigService implements IConfigService {
     try {
       const responseConfig = this.kintoneUtil.getConfig(this.pluginId);
       if (responseConfig.config) {
-        const parsedConfig = JSON.parse(responseConfig.config);
+        const parsedConfig = JSON.parse(responseConfig.config) as unknown;
         return convertLegacyConfig(parsedConfig);
       }
       return { settings: [] };
