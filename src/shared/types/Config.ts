@@ -10,11 +10,13 @@ export type NoName3 = string;
 export type NoName4 = string;
 export type NoName5 = string;
 export type NoName6 = string;
+export type NoName7 = string;
 export type NoName2 = {
   name: NoName3;
   appId: NoName4;
   targetField: NoName5;
-  prefix: NoName6;
+  timestampField: NoName6;
+  prefix: NoName7;
 }[];
 
 export interface ConfigSchema {
