@@ -29,7 +29,7 @@ const AppSelector = (props: AppSelectorProps) => {
 
   const handleAppChange = (newAppId: string) => {
     onChange(newAppId);
-    // アプリが変更されたら、対象フィールドをリセット
+    // アプリが変更されたら、対象フィールドとタイムスタンプフィールドをリセット
     if (
       formContext?.currentIndex !== undefined &&
       formContext?.handleUpdateSetting
@@ -41,6 +41,7 @@ const AppSelector = (props: AppSelectorProps) => {
           ...currentSetting,
           appId: newAppId,
           targetField: "", // フィールドをリセット
+          timestampField: "", // タイムスタンプフィールドもリセット
         });
       }
     }
@@ -164,7 +165,92 @@ const FieldSelector = (
   );
 };
 
+const TimestampFieldSelector = (
+  props: AppSelectorProps & { idSchema?: { $id?: string } },
+) => {
+  const { value, onChange, formContext, idSchema } = props;
+  const [fields, setFields] = useState<KintoneField[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [cache] = useState(() => Cache.getInstance());
+
+  // 同じ配列内のappIdを取得
+  const getCurrentAppId = () => {
+    // タブUIの場合はcurrentSettingから取得
+    if (formContext?.currentSetting) {
+      return formContext.currentSetting.appId;
+    }
+    // 通常の配列UIの場合（フォールバック）
+    const id = idSchema?.$id || "";
+    const match = id.match(/settings_(\d+)_timestampField/);
+    if (match) {
+      const index = parseInt(match[1], 10);
+      return formContext?.formData?.settings?.[index]?.appId;
+    }
+    return null;
+  };
+
+  const appId = getCurrentAppId();
+
+  useEffect(() => {
+    const loadTimestampFields = async () => {
+      if (!appId) {
+        setFields([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const properties = await cache.getFormFields(appId);
+        const fieldOptions = Object.entries(properties)
+          .filter(([, field]: [string, unknown]) => {
+            const typedField = field as { type: string };
+            // DATETIMEフィールドのみ選択可能にする
+            return typedField.type === "DATETIME";
+          })
+          .map(([code, field]: [string, unknown]): KintoneField => {
+            const typedField = field as { label?: string; type: string };
+            return {
+              code,
+              label: typedField.label || code,
+              type: typedField.type,
+            };
+          });
+        setFields(fieldOptions);
+      } catch (error) {
+        console.error("Failed to load timestamp fields:", error);
+        setFields([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTimestampFields();
+  }, [appId, cache]);
+
+  return (
+    <FormControl fullWidth disabled={!appId || loading}>
+      <InputLabel>タイムスタンプフィールド</InputLabel>
+      <Select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        label="タイムスタンプフィールド"
+      >
+        <MenuItem value="">
+          <em>選択してください</em>
+        </MenuItem>
+        {fields.map((field) => (
+          <MenuItem key={field.code} value={field.code}>
+            {field.label} (DATETIME)
+          </MenuItem>
+        ))}
+      </Select>
+      {loading && <div>タイムスタンプフィールドを読み込み中...</div>}
+    </FormControl>
+  );
+};
+
 export const customWidgets: RegistryWidgetsType = {
   appSelector: AppSelector,
   fieldSelector: FieldSelector,
+  timestampFieldSelector: TimestampFieldSelector,
 };

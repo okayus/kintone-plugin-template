@@ -30,12 +30,16 @@
             "type": "string",
             "title": "対象フィールド"
           },
+          "timestampField": {
+            "type": "string",
+            "title": "タイムスタンプフィールド"
+          },
           "prefix": {
             "type": "string",
             "title": "通知メッセージのプレフィックス"
           }
         },
-        "required": ["name", "appId", "targetField", "prefix"],
+        "required": ["name", "appId", "targetField", "timestampField", "prefix"],
         "additionalProperties": false
       }
     }

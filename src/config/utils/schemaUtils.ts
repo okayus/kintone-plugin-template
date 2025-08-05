@@ -91,6 +91,9 @@ export const createSettingUiSchema = () => ({
   targetField: {
     "ui:widget": "fieldSelector",
   },
+  timestampField: {
+    "ui:widget": "timestampFieldSelector",
+  },
   prefix: {
     "ui:widget": "textarea",
   },
