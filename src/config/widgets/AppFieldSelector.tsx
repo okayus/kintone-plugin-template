@@ -10,26 +10,9 @@ import {
   Typography,
 } from "@mui/material";
 
-import { Cache } from "../../shared/util/cache";
+import { createKintoneCache } from "../../shared/util/cache";
 
-interface KintoneApp {
-  appId: string;
-  code: string;
-  name: string;
-  description: string;
-  spaceId: string | null;
-  threadId: string | null;
-  createdAt: string;
-  creator: {
-    code: string;
-    name: string;
-  };
-  modifiedAt: string;
-  modifier: {
-    code: string;
-    name: string;
-  };
-}
+import type { KintoneApp } from "../types/WidgetTypes";
 
 interface AppFieldValue {
   appId: string;
@@ -55,7 +38,7 @@ export const AppFieldSelector: React.FC<AppFieldSelectorProps> = ({
   const [apps, setApps] = useState<KintoneApp[]>([]);
   const [fields, setFields] = useState<FieldOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   const currentValue: AppFieldValue = value || { appId: "", targetField: "" };
 
