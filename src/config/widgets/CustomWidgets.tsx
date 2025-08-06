@@ -5,7 +5,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 
-import { Cache } from "../../shared/util/cache";
+import { createKintoneCache, type KintoneCache } from "../../shared/util/cache";
 
 import type {
   AppSelectorProps,
@@ -17,7 +17,7 @@ import type { RegistryWidgetsType } from "@rjsf/utils";
 const AppSelector = (props: AppSelectorProps) => {
   const { value, onChange, formContext } = props;
   const [apps, setApps] = useState<KintoneApp[]>([]);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   useEffect(() => {
     const loadApps = async () => {
@@ -74,7 +74,7 @@ const FieldSelector = (
   const { value, onChange, formContext, idSchema } = props;
   const [fields, setFields] = useState<KintoneField[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   // 同じ配列内のappIdを取得
   const getCurrentAppId = () => {
@@ -171,7 +171,7 @@ const TimestampFieldSelector = (
   const { value, onChange, formContext, idSchema } = props;
   const [fields, setFields] = useState<KintoneField[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   // 同じ配列内のappIdを取得
   const getCurrentAppId = () => {
