@@ -73,8 +73,7 @@ export class MessageService {
     alert(this.generateMessage(recordsWithSettings));
   }
 
-  public generateMessage(recordsWithSettings: SettingRecordPair[],
-  ): string {
+  public generateMessage(recordsWithSettings: SettingRecordPair[]): string {
     const messages: string[] = [];
 
     for (const { setting, records } of recordsWithSettings) {

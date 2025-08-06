@@ -82,7 +82,7 @@ export const createDefaultCommonSetting = () => ({
 
 /**
  * 既存の設定項目に不足しているプロパティを追加する純粋関数
- * 
+ *
  * 【なぜこの実装なのか】
  * - JSON Schemaで新しく必須プロパティが追加された際の後方互換性を保つため
  * - anyを使用: レガシーデータの構造が予測できないため型安全性よりも柔軟性を優先
@@ -100,7 +100,7 @@ const ensureSettingProperties = (setting: any): ConfigSetting => ({
 /**
  * レガシー設定データを新形式に変換する純粋関数
  * 型ガードを使用して安全に変換を行う
- * 
+ *
  * 【なぜこの実装なのか】
  */
 export const convertLegacyConfig = (

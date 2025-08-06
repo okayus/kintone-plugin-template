@@ -30,7 +30,7 @@ graph TB
         end
     end
     
-    subgraph "Cacheクラス (シングルトン)"
+    subgraph "クロージャベースキャッシュ"
         AppCache["apps[]<br/>アプリ一覧"]
         FieldCache["fieldsCache{}<br/>appId別フィールド"]
     end
@@ -67,7 +67,7 @@ graph TB
 sequenceDiagram
     participant User as ユーザー
     participant AppSel as AppSelector
-    participant Cache as Cacheクラス
+    participant Cache as キャッシュ関数
     participant FieldSel as FieldSelector
     participant API as kintone API
     
@@ -133,7 +133,7 @@ import { customWidgets } from "./widgets/CustomWidgets";
 const AppSelector = (props: any) => {
   const { value, onChange, formContext } = props;
   const [apps, setApps] = useState<any[]>([]);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   // 初回レンダリング時にアプリ一覧を取得
   useEffect(() => {
@@ -178,7 +178,7 @@ const AppSelector = (props: any) => {
 
 **ポイント解説：**
 - **外部コンポーネント化**: レンダリング最適化により不要な再作成を防止
-- `Cache.getInstance()`: シングルトンパターンでキャッシュインスタンスを取得
+- `createKintoneCache()`: クロージャベースのキャッシュインスタンスを作成
 - `handleAppChange`: アプリ変更時に2つの処理を実行
   - ① 新しいappIdを保存
   - ② 関連するtargetFieldを空にリセット（重要！）
@@ -190,7 +190,7 @@ const FieldSelector = (props: any) => {
   const { value, onChange, formContext, idSchema } = props;
   const [fields, setFields] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   // 現在のタブのappIdを取得する関数
   const getCurrentAppId = () => {
@@ -263,64 +263,100 @@ const FieldSelector = (props: any) => {
 };
 ```
 
-### 3. Cacheクラスの実装
+### 3. クロージャベースキャッシュの実装
 
 ```mermaid
-classDiagram
-    class Cache {
-        -static instance: Cache
-        -apps: KintoneApp[]
-        -fieldsCache: Object
-        -kintoneSdk: KintoneSdk
-        
-        +static getInstance() Cache
-        +init() Promise~void~
-        +getApps() KintoneApp[]
-        +getFormFields(appId) Promise~Properties~
-        +clearCache() void
-    }
+graph TB
+    subgraph "createKintoneCache 関数"
+        CreateCache["createKintoneCache(restApiClient?)"]
+        Closure["クロージャ内部状態"]
+        ReturnAPI["戻り値: キャッシュAPI"]
+    end
     
-    Cache --> KintoneSdk : uses
-    Cache : シングルトンパターン
-    Cache : アプリ一覧をキャッシュ
-    Cache : フィールド情報をappId別にキャッシュ
+    subgraph "内部状態（クロージャで保持）"
+        Apps["apps: KintoneApp[]"]
+        FieldsCache["fieldsCache: {[appId: string]: Properties}"]
+        RestClient["restApiClient: KintoneRestAPIClient"]
+    end
+    
+    subgraph "公開API"
+        Init["init(): Promise<void>"]
+        GetApps["getApps(): KintoneApp[]"]
+        GetFields["getFormFields(appId): Promise<Properties>"]
+        Clear["clearCache(): void"]
+    end
+    
+    CreateCache --> Closure
+    Closure --> Apps
+    Closure --> FieldsCache
+    Closure --> RestClient
+    
+    Closure --> ReturnAPI
+    ReturnAPI --> Init
+    ReturnAPI --> GetApps
+    ReturnAPI --> GetFields
+    ReturnAPI --> Clear
+    
+    classDef closure fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef state fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef api fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    
+    class CreateCache,Closure closure
+    class Apps,FieldsCache,RestClient state
+    class Init,GetApps,GetFields,Clear api
 ```
 
 ```typescript
-export class Cache {
-  private static instance: Cache | null = null;
-  private apps: KintoneApp[] = [];
-  private fieldsCache: { [appId: string]: Properties } = {};
-  private kintoneSdk: KintoneSdk;
+export const createKintoneCache = (
+  restApiClient: KintoneRestAPIClient = new KintoneRestAPIClient()
+) => {
+  // プライベート状態をクロージャで保持
+  let apps: KintoneApp[] = [];
+  let fieldsCache: { [appId: string]: Properties } = {};
 
-  // シングルトンパターンの実装
-  static getInstance(): Cache {
-    if (!Cache.instance) {
-      Cache.instance = new Cache();
-    }
-    return Cache.instance;
-  }
+  return {
+    // アプリ一覧を初期化
+    init: async (): Promise<void> => {
+      try {
+        const response = await restApiClient.app.getApps({
+          ids: null, codes: null, name: null, spaceIds: null,
+        });
+        apps = response.apps.map((app) => ({
+          appId: app.appId,
+          name: app.name,
+        }));
+      } catch (error) {
+        console.error("Failed to initialize cache:", error);
+        apps = [];
+      }
+    },
 
-  // フィールド取得（キャッシュ優先）
-  async getFormFields(appId: string | number): Promise<Properties> {
-    const appIdStr = String(appId);
-    
-    // キャッシュがあればそれを返す
-    if (this.fieldsCache[appIdStr]) {
-      return this.fieldsCache[appIdStr];
-    }
+    // フィールド取得（キャッシュ優先）
+    getFormFields: async (appId: string | number): Promise<Properties> => {
+      const appIdStr = String(appId);
+      
+      // キャッシュがあればそれを返す
+      if (fieldsCache[appIdStr]) {
+        return fieldsCache[appIdStr];
+      }
 
-    // キャッシュがなければAPIから取得
-    try {
-      const response = await this.kintoneSdk.fetchFields(Number(appId));
-      this.fieldsCache[appIdStr] = response;  // キャッシュに保存
-      return response;
-    } catch (error) {
-      console.error(`Failed to fetch fields for app ${appId}:`, error);
-      return {};
-    }
-  }
-}
+      // キャッシュがなければAPIから取得
+      try {
+        const response = await restApiClient.app.getFormFields({ 
+          app: Number(appId), 
+          preview: true 
+        });
+        fieldsCache[appIdStr] = response.properties;  // キャッシュに保存
+        return response.properties;
+      } catch (error) {
+        console.error(`Failed to fetch fields for app ${appId}:`, error);
+        return {};
+      }
+    },
+
+    // その他のAPI...
+  };
+};
 ```
 
 ## 重要な実装ポイント
@@ -410,14 +446,22 @@ useEffect(() => {
 ### パフォーマンス向上
 - カスタムウィジェットの外部化により、不要な再レンダリングを削減
 - メモリ使用量の最適化
+- **クロージャベースキャッシュ**: シングルトンインスタンスが不要でメモリ効率向上
 
 ### 保守性向上
 - 各ウィジェットを独立してテスト・修正可能
 - ESLint/TypeScriptルールへの完全準拠
+- **依存関係の単純化**: KintoneSdk中間レイヤーを排除してKintoneRestAPIClient直接使用
 
 ### 開発体験の向上
 - コンポーネントの責任が明確化
 - デバッグとトラブルシューティングが容易
+- **テスト容易性**: 依存性注入によりKintoneRestAPIClientを直接モック可能
+
+### 実装の改善
+- **クロージャパターン**: より関数型プログラミング的なアプローチ
+- **型安全性**: TypeScript親和性の向上
+- **柔軟性**: 各コンポーネントで独立したキャッシュインスタンス作成可能
 
 ## Q&A
 
@@ -649,7 +693,7 @@ graph TB
         end
     end
     
-    subgraph "Cacheクラス (シングルトン)"
+    subgraph "クロージャベースキャッシュ"
         FieldCache["currentAppFields<br/>自アプリフィールドのみ"]
     end
     
@@ -732,7 +776,7 @@ const FieldSelector = (props: FieldSelectorProps) => {
   const { value, onChange } = props;
   const [fields, setFields] = useState<KintoneField[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cache] = useState(() => Cache.getInstance());
+  const [cache] = useState(() => createKintoneCache());
 
   // 現在のアプリIDを取得（kintone標準API使用）
   const getCurrentAppId = () => {
@@ -824,47 +868,45 @@ export const customWidgets: RegistryWidgetsType = {
 };
 ```
 
-#### 4. Cacheクラスの最適化
+#### 4. キャッシュ関数の最適化
 
-**自アプリ専用メソッドの追加:**
+**自アプリ専用関数の追加:**
 ```typescript
 // src/shared/util/cache.ts (変更後)
-export class Cache {
-  private static instance: Cache | null = null;
-  // private apps: KintoneApp[] = [];  ← 不要なため削除可能
-  private currentAppFields: Properties | null = null;  // 自アプリ用キャッシュ
-  private kintoneSdk: KintoneSdk;
+export const createCurrentAppCache = (
+  restApiClient: KintoneRestAPIClient = new KintoneRestAPIClient()
+) => {
+  // 自アプリ用のシンプルなキャッシュ状態
+  let currentAppFields: Properties | null = null;
 
-  static getInstance(): Cache {
-    if (!Cache.instance) {
-      Cache.instance = new Cache();
+  return {
+    // 自アプリのフィールド取得（キャッシュ優先）
+    getCurrentAppFields: async (appId: string | number): Promise<Properties> => {
+      // キャッシュがあればそれを返す
+      if (currentAppFields) {
+        return currentAppFields;
+      }
+
+      // キャッシュがなければAPIから取得
+      try {
+        const response = await restApiClient.app.getFormFields({ 
+          app: Number(appId), 
+          preview: true 
+        });
+        currentAppFields = response.properties;  // キャッシュに保存
+        return response.properties;
+      } catch (error) {
+        console.error(`Failed to fetch fields for current app:`, error);
+        return {};
+      }
+    },
+
+    // キャッシュクリア（必要に応じて）
+    clearCurrentAppFieldsCache: (): void => {
+      currentAppFields = null;
     }
-    return Cache.instance;
-  }
-
-  // 自アプリのフィールド取得（キャッシュ優先）
-  async getCurrentAppFields(appId: string | number): Promise<Properties> {
-    // キャッシュがあればそれを返す
-    if (this.currentAppFields) {
-      return this.currentAppFields;
-    }
-
-    // キャッシュがなければAPIから取得
-    try {
-      const response = await this.kintoneSdk.fetchFields(Number(appId));
-      this.currentAppFields = response;  // キャッシュに保存
-      return response;
-    } catch (error) {
-      console.error(`Failed to fetch fields for current app:`, error);
-      return {};
-    }
-  }
-
-  // キャッシュクリア（必要に応じて）
-  clearCurrentAppFieldsCache(): void {
-    this.currentAppFields = null;
-  }
-}
+  };
+};
 ```
 
 #### 5. 設定データ操作の変更
@@ -961,3 +1003,158 @@ if (!currentAppId) {
 5. **UI簡素化**: 設定項目の削減とUX向上
 
 この実装により、コードが大幅に簡素化され、パフォーマンスも向上します。ただし、複数アプリ対応の柔軟性は失われるため、要件に応じて選択する必要があります。
+
+### Q: ESLintエラー「Possible race condition: fieldsCache[appIdStr] might be assigned based on an outdated state of fieldsCache.eslint require-atomic-updates」とは何？
+
+**A: このエラーは、非同期処理でのレースコンディション（競合状態）の可能性を警告しています。同じappIdで並列にgetFormFieldsを呼び出した場合、重複API呼び出しやデータ競合が発生する可能性があります。**
+
+#### エラーの原因となるコード
+
+```typescript
+getFormFields: async (appId: string | number): Promise<Properties> => {
+  const appIdStr = String(appId);
+
+  // ①チェック時点でキャッシュなし
+  if (fieldsCache[appIdStr]) {
+    return fieldsCache[appIdStr];
+  }
+
+  // ②API呼び出し（時間がかかる）
+  try {
+    const response = await restApiClient.app.getFormFields({
+      app: Number(appId), preview: true,
+    });
+    // ③この時点で他の呼び出しがキャッシュを変更している可能性
+    fieldsCache[appIdStr] = response.properties; // ← ここで警告
+    return response.properties;
+  } catch (error) {
+    // ...
+  }
+}
+```
+
+#### レースコンディションの具体例
+
+```mermaid
+sequenceDiagram
+    participant A as 呼び出しA (appId: "123")
+    participant B as 呼び出しB (appId: "123")
+    participant Cache as fieldsCache
+    participant API as kintone API
+
+    Note over A,B: 同時に同じappIdでgetFormFieldsを呼び出し
+    
+    A->>Cache: fieldsCache["123"] をチェック
+    B->>Cache: fieldsCache["123"] をチェック
+    Cache-->>A: undefined (キャッシュなし)
+    Cache-->>B: undefined (キャッシュなし)
+    
+    Note over A,B: 両方ともキャッシュなしと判断
+    
+    A->>API: restApiClient.app.getFormFields({app: 123})
+    B->>API: restApiClient.app.getFormFields({app: 123})
+    
+    Note over A,B: 重複API呼び出しが発生
+    
+    API-->>A: response A
+    API-->>B: response B
+    
+    A->>Cache: fieldsCache["123"] = response.properties (A)
+    B->>Cache: fieldsCache["123"] = response.properties (B)
+    
+    Note over Cache: Bの結果がAの結果を上書き<br/>データの不整合や無駄なAPI呼び出し
+```
+
+#### 問題点
+
+1. **重複API呼び出し**: 同じappIdで複数の並列呼び出しが発生
+2. **パフォーマンス低下**: 無駄なネットワーク通信とリソース消費
+3. **データ競合**: 後から完了した呼び出しが先の結果を上書き
+
+#### 解決策1: Promiseキャッシュパターン（推奨）
+
+```typescript
+export const createKintoneCache = (
+  restApiClient: KintoneRestAPIClient = new KintoneRestAPIClient()
+) => {
+  let apps: KintoneApp[] = [];
+  let fieldsCache: { [appId: string]: Properties } = {};
+  let pendingPromises: { [appId: string]: Promise<Properties> } = {}; // 追加
+
+  return {
+    getFormFields: async (appId: string | number): Promise<Properties> => {
+      const appIdStr = String(appId);
+
+      // キャッシュがあれば即座に返す
+      if (fieldsCache[appIdStr]) {
+        return fieldsCache[appIdStr];
+      }
+
+      // 進行中のPromiseがあればそれを返す
+      if (pendingPromises[appIdStr]) {
+        return pendingPromises[appIdStr];
+      }
+
+      // 新しいPromiseを作成してキャッシュ
+      const fetchPromise = (async (): Promise<Properties> => {
+        try {
+          const response = await restApiClient.app.getFormFields({
+            app: Number(appId),
+            preview: true,
+          });
+          fieldsCache[appIdStr] = response.properties;
+          return response.properties;
+        } catch (error) {
+          console.error(`Failed to fetch fields for app ${appId}:`, error);
+          return {};
+        } finally {
+          // 完了後にPromiseキャッシュをクリア
+          delete pendingPromises[appIdStr];
+        }
+      })();
+
+      pendingPromises[appIdStr] = fetchPromise;
+      return fetchPromise;
+    },
+
+    // キャッシュクリア時にPromiseキャッシュもクリア
+    clearCache: (): void => {
+      apps = [];
+      fieldsCache = {};
+      pendingPromises = {}; // 追加
+    },
+  };
+};
+```
+
+#### 解決策2: 簡易的なESLintルール無効化（非推奨）
+
+```typescript
+try {
+  const response = await restApiClient.app.getFormFields({
+    app: Number(appId), preview: true,
+  });
+  // eslint-disable-next-line require-atomic-updates
+  fieldsCache[appIdStr] = response.properties;
+  return response.properties;
+} catch (error) {
+  // ...
+}
+```
+
+**注意**: この方法は根本的な解決にならず、実際のレースコンディション問題は残存します。
+
+#### 実装における影響
+
+**現在の実装での影響度**:
+- **低リスク**: 通常のUI操作では同じappIdの並列呼び出しは稀
+- **中リスク**: タブを高速で切り替えた場合に発生可能性
+- **高リスク**: プログラムで複数のFieldSelectorを同時レンダリングする場合
+
+#### 推奨される対応
+
+1. **Promiseキャッシュパターンの採用**: 最も確実で効率的
+2. **テストケースの追加**: 並列呼び出しのテストを作成
+3. **エラーハンドリング強化**: Promise失敗時の適切な処理
+
+この修正により、重複API呼び出しを完全に防ぎ、パフォーマンスとデータ整合性を向上できます。
