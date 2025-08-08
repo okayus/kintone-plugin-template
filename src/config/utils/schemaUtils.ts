@@ -79,6 +79,9 @@ export const createCommonSettingUiSchema = () => ({
   prefix: {
     "ui:widget": "textarea",
   },
+  targetView: {
+    "ui:widget": "viewSelector",
+  },
 });
 
 /**

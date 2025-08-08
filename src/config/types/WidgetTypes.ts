@@ -20,6 +20,15 @@ export interface KintoneField {
 }
 
 /**
+ * kintone ビュー情報の型
+ */
+export interface KintoneView {
+  id: string;
+  name: string;
+  type: string;
+}
+
+/**
  * カスタムウィジェットの共通プロパティ
  */
 export interface CustomWidgetBaseProps extends WidgetProps {
@@ -48,5 +57,12 @@ export interface AppSelectorProps extends CustomWidgetBaseProps {
  * フィールドセレクターのプロパティ
  */
 export interface FieldSelectorProps extends CustomWidgetBaseProps {
+  value: string;
+}
+
+/**
+ * ビューセレクターのプロパティ
+ */
+export interface ViewSelectorProps extends CustomWidgetBaseProps {
   value: string;
 }
