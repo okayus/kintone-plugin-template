@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 
+import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 
-import { createKintoneCache, type KintoneCache } from "../../shared/util/cache";
+import { createKintoneCache } from "../../shared/util/cache";
 
 import type {
   AppSelectorProps,
   KintoneApp,
   KintoneField,
+  KintoneView,
+  ViewSelectorProps,
 } from "../types/WidgetTypes";
 import type { RegistryWidgetsType } from "@rjsf/utils";
 
@@ -249,8 +252,74 @@ const TimestampFieldSelector = (
   );
 };
 
+const ViewSelector = (props: ViewSelectorProps) => {
+  const { value, onChange } = props;
+  const [views, setViews] = useState<KintoneView[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadViews = async () => {
+      setLoading(true);
+      try {
+        // 現在のアプリIDを取得
+        const currentAppId = kintone?.app?.getId?.();
+        if (!currentAppId) {
+          console.warn("Current app ID not available");
+          return;
+        }
+
+        // RestAPIClientを使用してビューを直接取得
+        const restApiClient = new KintoneRestAPIClient();
+        const response = await restApiClient.app.getViews({
+          app: Number(currentAppId),
+        });
+
+        // レスポンスからビューの配列を作成
+        const viewsArray = Object.entries(response.views).map(
+          ([viewName, viewData]): KintoneView => ({
+            id: viewData.id || viewName,
+            name: viewData.name || viewName,
+            type: viewData.type,
+          }),
+        );
+
+        setViews(viewsArray);
+      } catch (error) {
+        console.error("Failed to load views:", error);
+        setViews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadViews();
+  }, []);
+
+  return (
+    <FormControl fullWidth disabled={loading}>
+      <InputLabel>実行ボタンを表示するビュー</InputLabel>
+      <Select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        label="実行ボタンを表示するビュー"
+      >
+        <MenuItem value="">
+          <em>選択してください</em>
+        </MenuItem>
+        {views.map((view) => (
+          <MenuItem key={view.id} value={view.id}>
+            {view.name} ({view.type})
+          </MenuItem>
+        ))}
+      </Select>
+      {loading && <div>ビューを読み込み中...</div>}
+    </FormControl>
+  );
+};
+
 export const customWidgets: RegistryWidgetsType = {
   appSelector: AppSelector,
   fieldSelector: FieldSelector,
   timestampFieldSelector: TimestampFieldSelector,
+  viewSelector: ViewSelector,
 };
