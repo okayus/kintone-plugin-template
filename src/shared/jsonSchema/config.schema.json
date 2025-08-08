@@ -8,6 +8,10 @@
         "prefix": {
           "type": "string",
           "title": "通知メッセージのプレフィックス"
+        },
+        "targetView": {
+          "type": "string",
+          "title": "実行ボタンを表示するビュー"
         }
       },
       "additionalProperties": false

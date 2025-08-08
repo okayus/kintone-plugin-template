@@ -38,6 +38,7 @@ export const deleteSetting = (
   formData: ConfigSchema,
   index: number,
 ): ConfigSchema => ({
+  ...formData, // 既存のcommonSettingを保持
   settings: formData.settings.filter((_, i) => i !== index),
 });
 
@@ -51,7 +52,10 @@ export const updateSetting = (
 ): ConfigSchema => {
   const newSettings = [...formData.settings];
   newSettings[index] = settingData;
-  return { settings: newSettings };
+  return {
+    ...formData, // 既存のcommonSettingを保持
+    settings: newSettings,
+  };
 };
 
 /**
