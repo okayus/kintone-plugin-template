@@ -18,6 +18,7 @@ export const createNewSetting = (index: number): ConfigSetting => ({
   targetField: "",
   timestampField: "",
   prefix: "",
+  body: "",
 });
 
 /**
@@ -99,6 +100,7 @@ const ensureSettingProperties = (setting: any): ConfigSetting => ({
   targetField: setting.targetField || "",
   timestampField: setting.timestampField || "", // timestampField追加によるバリデーションエラー対策
   prefix: setting.prefix || "",
+  body: setting.body || "", // body追加によるバリデーションエラー対策
 });
 
 /**
