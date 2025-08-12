@@ -41,9 +41,13 @@
           "prefix": {
             "type": "string",
             "title": "通知メッセージのプレフィックス"
+          },
+          "body": {
+            "type": "string",
+            "title": "通知メッセージのボディ"
           }
         },
-        "required": ["name", "appId", "targetField", "timestampField", "prefix"],
+        "required": ["name", "appId", "targetField", "timestampField", "prefix", "body"],
         "additionalProperties": false
       }
     }

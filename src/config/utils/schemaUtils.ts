@@ -100,4 +100,7 @@ export const createSettingUiSchema = () => ({
   prefix: {
     "ui:widget": "textarea",
   },
+  body: {
+    "ui:widget": "textarea",
+  },
 });
