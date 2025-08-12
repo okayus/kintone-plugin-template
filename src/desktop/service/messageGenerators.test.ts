@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { replacePlaceholders } from "./messageGenerators";
+import {
+  createSimpleFieldStrategy,
+  replacePlaceholders,
+  replacePlaceholdersWithStrategy,
+} from "./messageGenerators";
 
 import type { Record as KintoneRecord } from "@kintone/rest-api-client/lib/src/client/types";
 
@@ -67,5 +71,68 @@ describe("replacePlaceholders", () => {
     expect(replacePlaceholders("{name}さん、{name}さん", record)).toBe(
       "田中さん、田中さん",
     );
+  });
+});
+
+describe("Strategy Pattern", () => {
+  describe("createSimpleFieldStrategy", () => {
+    it("通常フィールドの値を取得する", () => {
+      const strategy = createSimpleFieldStrategy();
+      const record: KintoneRecord = {
+        name: { type: "SINGLE_LINE_TEXT", value: "田中" },
+        age: { type: "NUMBER", value: "25" },
+      };
+
+      expect(strategy(record, "name")).toBe("田中");
+      expect(strategy(record, "age")).toBe("25");
+    });
+
+    it("存在しないフィールドは空文字を返す", () => {
+      const strategy = createSimpleFieldStrategy();
+      const record: KintoneRecord = {};
+
+      expect(strategy(record, "unknown")).toBe("");
+    });
+  });
+
+  describe("replacePlaceholdersWithStrategy", () => {
+    it("カスタムストラテジーを使用してプレースホルダーを置換する", () => {
+      const customStrategy = (record: KintoneRecord, fieldCode: string) => {
+        const field = record[fieldCode];
+        if (!field?.value) return "[未設定]";
+        return `[${field.value}]`;
+      };
+
+      const record: KintoneRecord = {
+        name: { type: "SINGLE_LINE_TEXT", value: "田中" },
+      };
+
+      expect(
+        replacePlaceholdersWithStrategy(
+          customStrategy,
+          record,
+          "Hello {name}, {unknown}",
+        ),
+      ).toBe("Hello [田中], [未設定]");
+    });
+
+    it("simpleFieldStrategyと同じ動作をする", () => {
+      const strategy = createSimpleFieldStrategy();
+      const record: KintoneRecord = {
+        name: { type: "SINGLE_LINE_TEXT", value: "田中" },
+        dept: { type: "SINGLE_LINE_TEXT", value: "開発" },
+      };
+
+      const body = "こんにちは {name} さん、{dept} 部です";
+      const resultWithStrategy = replacePlaceholdersWithStrategy(
+        strategy,
+        record,
+        body,
+      );
+      const resultWithOriginal = replacePlaceholders(body, record);
+
+      expect(resultWithStrategy).toBe(resultWithOriginal);
+      expect(resultWithStrategy).toBe("こんにちは 田中 さん、開発 部です");
+    });
   });
 });
