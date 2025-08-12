@@ -88,7 +88,9 @@ describe("MessageService", () => {
             name: "設定1",
             appId: "1",
             targetField: "field1",
+            timestampField: "timestamp",
             prefix: "prefix\n",
+            body: "",
           },
         ],
       };
