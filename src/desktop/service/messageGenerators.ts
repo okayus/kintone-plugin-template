@@ -18,6 +18,28 @@ export const createSimpleFieldStrategy =
   };
 
 /**
+ * テーブルフィールド用ストラテジーを作成する
+ *
+ * @param separator 連結時の区切り文字（デフォルト: ", "）
+ * @returns テーブルフィールドの値を連結するストラテジー関数
+ */
+export const createTableFieldStrategy =
+  (separator = ", "): FieldValueStrategy =>
+  (record, fieldCode) => {
+    const [tableField, subField] = fieldCode.split(".");
+    const table = record[tableField];
+
+    if (!table || table.type !== "SUBTABLE" || !Array.isArray(table.value)) {
+      return "";
+    }
+
+    return table.value
+      .map((row) => row.value[subField]?.value?.toString() || "")
+      .filter((val) => val.trim() !== "")
+      .join(separator);
+  };
+
+/**
  * ストラテジーパターンを使用してプレースホルダーを置換する
  *
  * @param strategy - フィールド値取得ストラテジー
@@ -33,6 +55,50 @@ export const replacePlaceholdersWithStrategy = (
   return body.replace(/{([^}]+)}/g, (_, fieldCode) => {
     return strategy(record, fieldCode.trim());
   });
+};
+
+/**
+ * フィールドコードに基づいて適切なストラテジーを自動選択する
+ *
+ * @param separator テーブルフィールド用の区切り文字（デフォルト: ", "）
+ * @returns フィールドコードを判定してストラテジーを選択する関数
+ */
+export const createAutoFieldStrategy =
+  (separator = ", "): FieldValueStrategy =>
+  (record, fieldCode) => {
+    if (fieldCode.includes(".")) {
+      // テーブルフィールド（table.field形式）
+      return createTableFieldStrategy(separator)(record, fieldCode);
+    }
+    // 通常フィールド
+    return createSimpleFieldStrategy()(record, fieldCode);
+  };
+
+/**
+ * 通常フィールドとテーブルフィールドの両方に対応した置換関数
+ *
+ * @param body プレースホルダーを含むテキスト
+ * @param record kintoneレコードオブジェクト
+ * @param separator テーブルフィールド値の区切り文字（デフォルト: ", "）
+ * @returns プレースホルダーが置換されたテキスト
+ *
+ * @example
+ * ```typescript
+ * const record = {
+ *   name: { value: "田中" },
+ *   items: { type: "SUBTABLE", value: [{ value: { title: { value: "商品A" } } }] }
+ * };
+ * replaceAllPlaceholders("こんにちは {name} さん、商品: {items.title}", record);
+ * // => "こんにちは 田中 さん、商品: 商品A"
+ * ```
+ */
+export const replaceAllPlaceholders = (
+  body: string,
+  record: Record,
+  separator = ", ",
+): string => {
+  const strategy = createAutoFieldStrategy(separator);
+  return replacePlaceholdersWithStrategy(strategy, record, body);
 };
 
 /**
