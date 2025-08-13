@@ -1,5 +1,7 @@
 import { KintoneSdk } from "../../shared/util/kintoneSdk";
 
+import { replaceAllPlaceholders } from "./messageGenerators";
+
 import type { ConfigSchema } from "../../shared/types/Config";
 import type {
   AppID,
@@ -34,27 +36,45 @@ export class MessageService {
   }
 
   public async fetchRecordsFromSettings(): Promise<SettingRecordPair[]> {
-    // 設定されたすべてのアプリからレコードを取得し、設定と紐付けて返す
     const allResults: SettingRecordPair[] = [];
 
     for (const setting of this.config.settings) {
-      if (setting.appId && setting.targetField) {
-        try {
-          const records = (
-            await this.kintoneSdk.getRecords(
-              Number(setting.appId),
-              [setting.targetField],
-              "",
-            )
-          ).records;
-          allResults.push({ setting, records });
-        } catch (error) {
-          console.error(
-            `Failed to fetch records from app ${setting.appId}:`,
-            error,
+      if (!setting.appId) {
+        console.warn(`Setting "${setting.name}" has no appId. Skipping.`);
+        continue;
+      }
+
+      if (!setting.body || setting.body.trim() === "") {
+        console.warn(
+          `Setting "${setting.name}" has empty body field. Skipping.`,
+        );
+        continue;
+      }
+
+      try {
+        const fieldsToFetch = this.extractRequiredFields(setting);
+        if (fieldsToFetch.length === 0) {
+          console.warn(
+            `Setting "${setting.name}" has no extractable fields. Skipping.`,
           );
-          allResults.push({ setting, records: [] });
+          continue;
         }
+
+        const records = (
+          await this.kintoneSdk.getRecords(
+            Number(setting.appId),
+            fieldsToFetch,
+            "",
+          )
+        ).records;
+
+        allResults.push({ setting, records });
+      } catch (error) {
+        console.error(
+          `Failed to fetch records from app ${setting.appId}:`,
+          error,
+        );
+        allResults.push({ setting, records: [] });
       }
     }
 
@@ -77,26 +97,42 @@ export class MessageService {
     const messages: string[] = [];
 
     for (const { setting, records } of recordsWithSettings) {
-      if (setting.appId && setting.targetField && records.length > 0) {
-        const messageLine = (record: Record): string => {
-          const field = record[setting.targetField];
-          if (field && typeof field === "object" && "value" in field) {
-            return String(field.value || "");
-          }
-          return "";
-        };
+      if (!setting.body || setting.body.trim() === "") {
+        console.warn(
+          `Setting "${setting.name}" has empty body field. Skipping.`,
+        );
+        continue;
+      }
 
-        const messageFromRecords: string = records
-          .map((record) => messageLine(record))
-          .filter((line) => line.trim() !== "")
-          .join(", ");
-
-        if (messageFromRecords) {
-          messages.push(setting.prefix + messageFromRecords);
+      // 各レコードごとに個別メッセージ生成
+      for (const record of records) {
+        const message = replaceAllPlaceholders(setting.body, record);
+        if (message.trim()) {
+          messages.push(setting.prefix + message);
         }
       }
     }
 
     return messages.join("\n");
+  }
+
+  private extractRequiredFields(
+    setting: ConfigSchema["settings"][number],
+  ): string[] {
+    const fields = new Set<string>();
+
+    if (!setting.body) return [];
+
+    // bodyからプレースホルダーフィールド抽出
+    const placeholders = setting.body.match(/{([^}]+)}/g);
+    if (placeholders) {
+      for (const placeholder of placeholders) {
+        const fieldCode = placeholder.slice(1, -1).trim();
+        const [tableField] = fieldCode.split(".");
+        fields.add(tableField);
+      }
+    }
+
+    return Array.from(fields);
   }
 }
