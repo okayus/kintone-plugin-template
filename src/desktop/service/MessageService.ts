@@ -116,7 +116,7 @@ export class MessageService {
     return messages.join("\n");
   }
 
-  private extractRequiredFields(
+  public extractRequiredFields(
     setting: ConfigSchema["settings"][number],
   ): string[] {
     const fields = new Set<string>();
