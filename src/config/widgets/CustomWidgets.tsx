@@ -8,6 +8,8 @@ import Select from "@mui/material/Select";
 
 import { createKintoneCache } from "../../shared/util/cache";
 
+import { QueryConditionsWidget } from "./QueryConditionsWidget";
+
 import type {
   AppSelectorProps,
   KintoneApp,
@@ -322,4 +324,5 @@ export const customWidgets: RegistryWidgetsType = {
   fieldSelector: FieldSelector,
   timestampFieldSelector: TimestampFieldSelector,
   viewSelector: ViewSelector,
+  queryConditions: QueryConditionsWidget,
 };

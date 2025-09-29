@@ -101,6 +101,7 @@ const ensureSettingProperties = (setting: any): ConfigSetting => ({
   timestampField: setting.timestampField || "", // timestampField追加によるバリデーションエラー対策
   prefix: setting.prefix || "",
   body: setting.body || "", // body追加によるバリデーションエラー対策
+  queryConditions: setting.queryConditions || [], // queryConditions追加によるロード時の欠落対策
 });
 
 /**
