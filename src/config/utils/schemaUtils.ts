@@ -103,4 +103,7 @@ export const createSettingUiSchema = () => ({
   body: {
     "ui:widget": "textarea",
   },
+  queryConditions: {
+    "ui:widget": "queryConditions",
+  },
 });
