@@ -2,7 +2,20 @@ import { KintoneSdk } from "../../shared/util/kintoneSdk";
 
 import { replaceAllPlaceholders } from "./messageGenerators";
 
-import type { ConfigSchema } from "../../shared/types/Config";
+import type {
+  ConfigSchema,
+  Entity,
+  NoName11,
+  NoName17,
+  NoName23,
+  NoName29,
+  NoName35,
+  NoName41,
+  NoName47,
+  NoName53,
+  NoName59,
+  NoName65,
+} from "../../shared/types/Config";
 import type {
   AppID,
   Record,
@@ -13,6 +26,20 @@ interface SettingRecordPair {
   setting: ConfigSchema["settings"][number];
   records: Record[];
 }
+
+// クエリ条件の型定義
+type QueryCondition =
+  | NoName11
+  | NoName17
+  | NoName23
+  | NoName29
+  | NoName35
+  | NoName41
+  | NoName47
+  | NoName53
+  | NoName59
+  | NoName65
+  | Entity;
 
 export class MessageService {
   private config: ConfigSchema;
@@ -60,11 +87,15 @@ export class MessageService {
           continue;
         }
 
+        const queryString = setting.queryConditions
+          ? this.buildQueryString(setting.queryConditions)
+          : "";
+
         const records = (
           await this.kintoneSdk.getRecords(
             Number(setting.appId),
             fieldsToFetch,
-            "",
+            queryString,
           )
         ).records;
 
@@ -133,6 +164,65 @@ export class MessageService {
       }
     }
 
+    // queryConditionsからもフィールドを抽出
+    if (setting.queryConditions) {
+      for (const condition of setting.queryConditions) {
+        fields.add(condition.fieldCode);
+      }
+    }
+
     return Array.from(fields);
+  }
+
+  public buildQueryString(conditions: QueryCondition[]): string {
+    if (!conditions || conditions.length === 0) {
+      return "";
+    }
+
+    const queries = conditions.map((condition, index) => {
+      let query = "";
+
+      // フィールドタイプに応じてクエリを生成
+      if ("stringValue" in condition) {
+        // 文字列値フィールド
+        const escapedValue = condition.stringValue.replace(/"/g, '\\"');
+        if (
+          condition.operator === "like" ||
+          condition.operator === "not like"
+        ) {
+          query = `${condition.fieldCode} ${condition.operator} "${escapedValue}"`;
+        } else if (
+          condition.operator === "is" ||
+          condition.operator === "is not"
+        ) {
+          // 複数行テキスト用のis/is not演算子
+          query = `${condition.fieldCode} ${condition.operator} "${escapedValue}"`;
+        } else {
+          query = `${condition.fieldCode} ${condition.operator} "${escapedValue}"`;
+        }
+      } else if ("arrayValue" in condition) {
+        // 文字列配列フィールド
+        const values = condition.arrayValue.map(
+          (v) => `"${v.replace(/"/g, '\\"')}"`,
+        );
+        query = `${condition.fieldCode} ${condition.operator} (${values.join(",")})`;
+      } else if ("entityValue" in condition) {
+        // Entity配列フィールド
+        const codes = condition.entityValue.map(
+          (e) => `"${e.code.replace(/"/g, '\\"')}"`,
+        );
+        query = `${condition.fieldCode} ${condition.operator} (${codes.join(",")})`;
+      }
+
+      // 論理演算子の処理（最初の条件以外）
+      if (index > 0) {
+        const logicalOp = condition.logicalOperator || "and";
+        query = ` ${logicalOp} ${query}`;
+      }
+
+      return query;
+    });
+
+    return queries.join("");
   }
 }

@@ -45,6 +45,393 @@
           "body": {
             "type": "string",
             "title": "通知メッセージのボディ"
+          },
+          "queryConditions": {
+            "type": "array",
+            "title": "レコード取得条件",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "title": "文字列系（文字列値演算子）",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["SINGLE_LINE_TEXT", "LINK"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["=", "!=", "like", "not like"],
+                      "title": "演算子"
+                    },
+                    "stringValue": {
+                      "type": "string",
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "stringValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "文字列系（配列値演算子）",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["SINGLE_LINE_TEXT", "LINK"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["in", "not in"],
+                      "title": "演算子"
+                    },
+                    "arrayValue": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "arrayValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "数値系（文字列値演算子）",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["NUMBER", "CALC"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["=", "!=", ">", ">=", "<", "<="],
+                      "title": "演算子"
+                    },
+                    "stringValue": {
+                      "type": "string",
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "stringValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "数値系（配列値演算子）",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["NUMBER", "CALC"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["in", "not in"],
+                      "title": "演算子"
+                    },
+                    "arrayValue": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "arrayValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "複数行テキスト",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["MULTI_LINE_TEXT"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["like", "not like", "is", "is not"],
+                      "title": "演算子"
+                    },
+                    "stringValue": {
+                      "type": "string",
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "stringValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "リッチエディター",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["RICH_TEXT"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["like", "not like"],
+                      "title": "演算子"
+                    },
+                    "stringValue": {
+                      "type": "string",
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "stringValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "選択系フィールド",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["RADIO_BUTTON", "DROP_DOWN", "CHECK_BOX", "MULTI_SELECT"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["in", "not in"],
+                      "title": "演算子"
+                    },
+                    "arrayValue": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "arrayValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "ステータス（文字列値演算子）",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["STATUS"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["=", "!="],
+                      "title": "演算子"
+                    },
+                    "stringValue": {
+                      "type": "string",
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "stringValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "ステータス（配列値演算子）",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["STATUS"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["in", "not in"],
+                      "title": "演算子"
+                    },
+                    "arrayValue": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "arrayValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "日時系フィールド",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["DATE", "TIME", "DATETIME"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["=", "!=", ">", ">=", "<", "<="],
+                      "title": "演算子"
+                    },
+                    "stringValue": {
+                      "type": "string",
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "stringValue"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "title": "Entity配列フィールド",
+                  "properties": {
+                    "fieldCode": {
+                      "type": "string",
+                      "title": "フィールドコード"
+                    },
+                    "fieldType": {
+                      "type": "string",
+                      "enum": ["USER_SELECT", "ORGANIZATION_SELECT", "GROUP_SELECT", "STATUS_ASSIGNEE"],
+                      "title": "フィールドタイプ"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["in", "not in"],
+                      "title": "演算子"
+                    },
+                    "entityValue": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "title": "コード"
+                          },
+                          "name": {
+                            "type": "string",
+                            "title": "名前"
+                          }
+                        },
+                        "required": ["code"],
+                        "additionalProperties": false
+                      },
+                      "title": "条件値"
+                    },
+                    "logicalOperator": {
+                      "type": "string",
+                      "enum": ["and", "or"],
+                      "default": "and",
+                      "title": "論理演算子"
+                    }
+                  },
+                  "required": ["fieldCode", "fieldType", "operator", "entityValue"],
+                  "additionalProperties": false
+                }
+              ]
+            }
           }
         },
         "required": ["name", "appId", "targetField", "timestampField", "prefix", "body"],

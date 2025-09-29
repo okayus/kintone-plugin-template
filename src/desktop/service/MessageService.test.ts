@@ -4,7 +4,20 @@ import { KintoneSdk } from "../../shared/util/kintoneSdk";
 
 import { MessageService } from "./MessageService";
 
-import type { ConfigSchema } from "../../shared/types/Config";
+import type {
+  ConfigSchema,
+  Entity,
+  NoName11,
+  NoName17,
+  NoName23,
+  NoName29,
+  NoName35,
+  NoName41,
+  NoName47,
+  NoName53,
+  NoName59,
+  NoName65,
+} from "../../shared/types/Config";
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import type { Record as KintoneRecord } from "@kintone/rest-api-client/lib/src/client/types";
 
@@ -352,6 +365,602 @@ describe("MessageService", () => {
 
       const fields = messageService.extractRequiredFields(setting);
       expect(fields).toEqual([]);
+    });
+
+    it("queryConditionsからもフィールドを抽出", () => {
+      const mockConfig: ConfigSchema = { settings: [] };
+      const messageService = new MessageService(mockConfig, mockkintoneSdk);
+
+      const setting = {
+        name: "test",
+        appId: "1",
+        targetField: "field1",
+        timestampField: "timestamp",
+        prefix: "",
+        body: "Hello {name}",
+        queryConditions: [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS" as const,
+            operator: "=" as const,
+            stringValue: "進行中",
+          },
+          {
+            fieldCode: "category",
+            fieldType: "CHECK_BOX" as const,
+            operator: "in" as const,
+            arrayValue: ["A", "B"],
+          },
+        ],
+      };
+
+      const fields = messageService.extractRequiredFields(setting);
+      expect(fields).toEqual(
+        expect.arrayContaining(["name", "status", "category"]),
+      );
+    });
+  });
+
+  describe("buildQueryString", () => {
+    let messageService: MessageService;
+
+    beforeEach(() => {
+      const mockConfig: ConfigSchema = { settings: [] };
+      messageService = new MessageService(mockConfig, mockkintoneSdk);
+    });
+
+    describe("文字列値フィールド", () => {
+      it("等価演算子でクエリ生成", () => {
+        const conditions: NoName11[] = [
+          {
+            fieldCode: "name",
+            fieldType: "SINGLE_LINE_TEXT",
+            operator: "=",
+            stringValue: "田中",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('name = "田中"');
+      });
+
+      it("like演算子でクエリ生成", () => {
+        const conditions: NoName11[] = [
+          {
+            fieldCode: "title",
+            fieldType: "SINGLE_LINE_TEXT",
+            operator: "like",
+            stringValue: "商品%",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('title like "商品%"');
+      });
+
+      it("not like演算子でクエリ生成", () => {
+        const conditions: NoName11[] = [
+          {
+            fieldCode: "comment",
+            fieldType: "SINGLE_LINE_TEXT",
+            operator: "not like",
+            stringValue: "%削除%",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('comment not like "%削除%"');
+      });
+
+      it("in演算子でクエリ生成（文字列系）", () => {
+        const conditions: NoName17[] = [
+          {
+            fieldCode: "status",
+            fieldType: "SINGLE_LINE_TEXT",
+            operator: "in",
+            arrayValue: ["進行中", "レビュー中", "完了"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status in ("進行中","レビュー中","完了")');
+      });
+    });
+
+    describe("数値系フィールド", () => {
+      it("数値比較演算子でクエリ生成", () => {
+        const conditions: NoName23[] = [
+          {
+            fieldCode: "amount",
+            fieldType: "NUMBER",
+            operator: ">=",
+            stringValue: "1000",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('amount >= "1000"');
+      });
+
+      it("計算フィールドでクエリ生成", () => {
+        const conditions: NoName23[] = [
+          {
+            fieldCode: "total",
+            fieldType: "CALC",
+            operator: "<",
+            stringValue: "500",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('total < "500"');
+      });
+
+      it("in演算子でクエリ生成（数値系）", () => {
+        const conditions: NoName29[] = [
+          {
+            fieldCode: "priority",
+            fieldType: "NUMBER",
+            operator: "in",
+            arrayValue: ["1", "2", "3"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('priority in ("1","2","3")');
+      });
+    });
+
+    describe("複数行テキスト系フィールド", () => {
+      it("複数行テキストのlike演算子", () => {
+        const conditions: NoName35[] = [
+          {
+            fieldCode: "description",
+            fieldType: "MULTI_LINE_TEXT",
+            operator: "like",
+            stringValue: "%重要%",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('description like "%重要%"');
+      });
+
+      it("複数行テキストのis演算子", () => {
+        const conditions: NoName35[] = [
+          {
+            fieldCode: "notes",
+            fieldType: "MULTI_LINE_TEXT",
+            operator: "is",
+            stringValue: "",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('notes is ""');
+      });
+
+      it("複数行テキストのis not演算子", () => {
+        const conditions: NoName35[] = [
+          {
+            fieldCode: "memo",
+            fieldType: "MULTI_LINE_TEXT",
+            operator: "is not",
+            stringValue: "",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('memo is not ""');
+      });
+    });
+
+    describe("リッチエディター", () => {
+      it("リッチエディターのlike演算子", () => {
+        const conditions: NoName41[] = [
+          {
+            fieldCode: "content",
+            fieldType: "RICH_TEXT",
+            operator: "like",
+            stringValue: "%画像%",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('content like "%画像%"');
+      });
+
+      it("リッチエディターのnot like演算子", () => {
+        const conditions: NoName41[] = [
+          {
+            fieldCode: "article",
+            fieldType: "RICH_TEXT",
+            operator: "not like",
+            stringValue: "%draft%",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('article not like "%draft%"');
+      });
+    });
+
+    describe("選択系フィールド", () => {
+      it("ラジオボタンでクエリ生成", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "priority",
+            fieldType: "RADIO_BUTTON",
+            operator: "in",
+            arrayValue: ["高"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('priority in ("高")');
+      });
+
+      it("ドロップダウンでクエリ生成", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "status",
+            fieldType: "DROP_DOWN",
+            operator: "not in",
+            arrayValue: ["完了", "キャンセル"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status not in ("完了","キャンセル")');
+      });
+
+      it("チェックボックスでクエリ生成", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "category",
+            fieldType: "CHECK_BOX",
+            operator: "in",
+            arrayValue: ["A", "B", "C"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('category in ("A","B","C")');
+      });
+
+      it("複数選択でクエリ生成", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "tags",
+            fieldType: "MULTI_SELECT",
+            operator: "not in",
+            arrayValue: ["draft", "archived"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('tags not in ("draft","archived")');
+      });
+    });
+
+    describe("ステータス系フィールド", () => {
+      it("ステータス等価演算子でクエリ生成", () => {
+        const conditions: NoName53[] = [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS",
+            operator: "=",
+            stringValue: "進行中",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status = "進行中"');
+      });
+
+      it("ステータス不等価演算子でクエリ生成", () => {
+        const conditions: NoName53[] = [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS",
+            operator: "!=",
+            stringValue: "完了",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status != "完了"');
+      });
+
+      it("ステータスin演算子でクエリ生成", () => {
+        const conditions: NoName59[] = [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS",
+            operator: "in",
+            arrayValue: ["進行中", "レビュー中"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status in ("進行中","レビュー中")');
+      });
+    });
+
+    describe("日時系フィールド", () => {
+      it("日付フィールドでクエリ生成", () => {
+        const conditions: NoName65[] = [
+          {
+            fieldCode: "due_date",
+            fieldType: "DATE",
+            operator: ">=",
+            stringValue: "2024-01-01",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('due_date >= "2024-01-01"');
+      });
+
+      it("時刻フィールドでクエリ生成", () => {
+        const conditions: NoName65[] = [
+          {
+            fieldCode: "start_time",
+            fieldType: "TIME",
+            operator: "<",
+            stringValue: "09:00",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('start_time < "09:00"');
+      });
+
+      it("日時フィールドでクエリ生成", () => {
+        const conditions: NoName65[] = [
+          {
+            fieldCode: "updated_at",
+            fieldType: "DATETIME",
+            operator: ">",
+            stringValue: "2024-01-01T00:00:00Z",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('updated_at > "2024-01-01T00:00:00Z"');
+      });
+    });
+
+    describe("Entity配列フィールド", () => {
+      it("ユーザー選択フィールドでクエリ生成", () => {
+        const conditions: Entity[] = [
+          {
+            fieldCode: "assignee",
+            fieldType: "USER_SELECT",
+            operator: "in",
+            entityValue: [
+              { code: "user1", name: "田中" },
+              { code: "user2", name: "佐藤" },
+            ],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('assignee in ("user1","user2")');
+      });
+
+      it("組織選択フィールドでクエリ生成", () => {
+        const conditions: Entity[] = [
+          {
+            fieldCode: "organization",
+            fieldType: "ORGANIZATION_SELECT",
+            operator: "not in",
+            entityValue: [{ code: "org1" }],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('organization not in ("org1")');
+      });
+
+      it("グループ選択フィールドでクエリ生成", () => {
+        const conditions: Entity[] = [
+          {
+            fieldCode: "group",
+            fieldType: "GROUP_SELECT",
+            operator: "in",
+            entityValue: [
+              { code: "group1", name: "開発チーム" },
+              { code: "group2", name: "営業チーム" },
+              { code: "group3", name: "管理チーム" },
+            ],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('group in ("group1","group2","group3")');
+      });
+    });
+
+    describe("複数条件と論理演算子", () => {
+      it("and条件で複数フィールド連結", () => {
+        const conditions: Array<NoName53 | NoName47> = [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS",
+            operator: "=",
+            stringValue: "進行中",
+          },
+          {
+            fieldCode: "priority",
+            fieldType: "DROP_DOWN",
+            operator: "in",
+            arrayValue: ["高"],
+            logicalOperator: "and",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status = "進行中" and priority in ("高")');
+      });
+
+      it("or条件で複数フィールド連結", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "category",
+            fieldType: "RADIO_BUTTON",
+            operator: "in",
+            arrayValue: ["A"],
+          },
+          {
+            fieldCode: "category",
+            fieldType: "RADIO_BUTTON",
+            operator: "in",
+            arrayValue: ["B"],
+            logicalOperator: "or",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('category in ("A") or category in ("B")');
+      });
+
+      it("混在条件（and/or組み合わせ）", () => {
+        const conditions: Array<NoName53 | NoName47> = [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS",
+            operator: "!=",
+            stringValue: "完了",
+          },
+          {
+            fieldCode: "priority",
+            fieldType: "DROP_DOWN",
+            operator: "in",
+            arrayValue: ["高"],
+            logicalOperator: "and",
+          },
+          {
+            fieldCode: "category",
+            fieldType: "CHECK_BOX",
+            operator: "in",
+            arrayValue: ["重要", "緊急"],
+            logicalOperator: "or",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe(
+          'status != "完了" and priority in ("高") or category in ("重要","緊急")',
+        );
+      });
+
+      it("論理演算子のデフォルト値（and）", () => {
+        const conditions: Array<NoName53 | NoName11> = [
+          {
+            fieldCode: "status",
+            fieldType: "STATUS",
+            operator: "=",
+            stringValue: "進行中",
+          },
+          {
+            fieldCode: "assignee",
+            fieldType: "SINGLE_LINE_TEXT",
+            operator: "!=",
+            stringValue: "",
+            // logicalOperatorを省略（デフォルトでand）
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('status = "進行中" and assignee != ""');
+      });
+    });
+
+    describe("エッジケース", () => {
+      it("空配列の場合は空文字列を返す", () => {
+        const conditions: never[] = [];
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe("");
+      });
+
+      it("nullやundefinedの場合は空文字列を返す", () => {
+        expect(messageService.buildQueryString(null as any)).toBe("");
+        expect(messageService.buildQueryString(undefined as any)).toBe("");
+      });
+
+      it("特殊文字エスケープ（ダブルクォート）", () => {
+        const conditions: NoName35[] = [
+          {
+            fieldCode: "comment",
+            fieldType: "MULTI_LINE_TEXT",
+            operator: "like",
+            stringValue: 'test"quote',
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('comment like "test\\"quote"');
+      });
+
+      it("特殊文字エスケープ（配列内のダブルクォート）", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "tags",
+            fieldType: "MULTI_SELECT",
+            operator: "in",
+            arrayValue: ['tag"with"quotes', "normal"],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('tags in ("tag\\"with\\"quotes","normal")');
+      });
+
+      it("特殊文字エスケープ（Entity内のダブルクォート）", () => {
+        const conditions: Entity[] = [
+          {
+            fieldCode: "assignee",
+            fieldType: "USER_SELECT",
+            operator: "in",
+            entityValue: [
+              { code: 'user"test', name: "Test User" },
+              { code: "normal_user", name: "Normal User" },
+            ],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('assignee in ("user\\"test","normal_user")');
+      });
+
+      it("空文字列値でクエリ生成", () => {
+        const conditions: NoName11[] = [
+          {
+            fieldCode: "notes",
+            fieldType: "SINGLE_LINE_TEXT",
+            operator: "=",
+            stringValue: "",
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe('notes = ""');
+      });
+
+      it("空配列値でクエリ生成", () => {
+        const conditions: NoName47[] = [
+          {
+            fieldCode: "tags",
+            fieldType: "MULTI_SELECT",
+            operator: "in",
+            arrayValue: [],
+          },
+        ];
+
+        const result = messageService.buildQueryString(conditions);
+        expect(result).toBe("tags in ()");
+      });
     });
   });
 });
