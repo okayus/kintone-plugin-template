@@ -13,6 +13,79 @@ export type NoName6 = string;
 export type NoName7 = string;
 export type NoName8 = string;
 export type NoName9 = string;
+export type NoName12 = string;
+export type NoName13 = "SINGLE_LINE_TEXT" | "LINK";
+export type NoName14 = "=" | "!=" | "like" | "not like";
+export type NoName15 = string;
+export type NoName16 = "and" | "or";
+export type NoName18 = string;
+export type NoName19 = "SINGLE_LINE_TEXT" | "LINK";
+export type NoName20 = "in" | "not in";
+export type NoName21 = string[];
+export type NoName22 = "and" | "or";
+export type NoName24 = string;
+export type NoName25 = "NUMBER" | "CALC";
+export type NoName26 = "=" | "!=" | ">" | ">=" | "<" | "<=";
+export type NoName27 = string;
+export type NoName28 = "and" | "or";
+export type NoName30 = string;
+export type NoName31 = "NUMBER" | "CALC";
+export type NoName32 = "in" | "not in";
+export type NoName33 = string[];
+export type NoName34 = "and" | "or";
+export type NoName36 = string;
+export type NoName37 = "MULTI_LINE_TEXT";
+export type NoName38 = "like" | "not like" | "is" | "is not";
+export type NoName39 = string;
+export type NoName40 = "and" | "or";
+export type NoName42 = string;
+export type NoName43 = "RICH_TEXT";
+export type NoName44 = "like" | "not like";
+export type NoName45 = string;
+export type NoName46 = "and" | "or";
+export type NoName48 = string;
+export type NoName49 = "RADIO_BUTTON" | "DROP_DOWN" | "CHECK_BOX" | "MULTI_SELECT";
+export type NoName50 = "in" | "not in";
+export type NoName51 = string[];
+export type NoName52 = "and" | "or";
+export type NoName54 = string;
+export type NoName55 = "STATUS";
+export type NoName56 = "=" | "!=";
+export type NoName57 = string;
+export type NoName58 = "and" | "or";
+export type NoName60 = string;
+export type NoName61 = "STATUS";
+export type NoName62 = "in" | "not in";
+export type NoName63 = string[];
+export type NoName64 = "and" | "or";
+export type NoName66 = string;
+export type NoName67 = "DATE" | "TIME" | "DATETIME";
+export type NoName68 = "=" | "!=" | ">" | ">=" | "<" | "<=";
+export type NoName69 = string;
+export type NoName70 = "and" | "or";
+export type NoName71 = string;
+export type NoName72 = "USER_SELECT" | "ORGANIZATION_SELECT" | "GROUP_SELECT" | "STATUS_ASSIGNEE";
+export type NoName73 = "in" | "not in";
+export type NoName75 = string;
+export type NoName76 = string;
+export type NoName74 = {
+  code: NoName75;
+  name?: NoName76;
+}[];
+export type NoName77 = "and" | "or";
+export type NoName10 = (
+  | NoName11
+  | NoName17
+  | NoName23
+  | NoName29
+  | NoName35
+  | NoName41
+  | NoName47
+  | NoName53
+  | NoName59
+  | NoName65
+  | Entity
+)[];
 export type NoName3 = {
   name: NoName4;
   appId: NoName5;
@@ -20,6 +93,7 @@ export type NoName3 = {
   timestampField: NoName7;
   prefix: NoName8;
   body: NoName9;
+  queryConditions?: NoName10;
 }[];
 
 export interface ConfigSchema {
@@ -29,4 +103,81 @@ export interface ConfigSchema {
 export interface NoName {
   prefix?: NoName1;
   targetView?: NoName2;
+}
+export interface NoName11 {
+  fieldCode: NoName12;
+  fieldType: NoName13;
+  operator: NoName14;
+  stringValue: NoName15;
+  logicalOperator?: NoName16;
+}
+export interface NoName17 {
+  fieldCode: NoName18;
+  fieldType: NoName19;
+  operator: NoName20;
+  arrayValue: NoName21;
+  logicalOperator?: NoName22;
+}
+export interface NoName23 {
+  fieldCode: NoName24;
+  fieldType: NoName25;
+  operator: NoName26;
+  stringValue: NoName27;
+  logicalOperator?: NoName28;
+}
+export interface NoName29 {
+  fieldCode: NoName30;
+  fieldType: NoName31;
+  operator: NoName32;
+  arrayValue: NoName33;
+  logicalOperator?: NoName34;
+}
+export interface NoName35 {
+  fieldCode: NoName36;
+  fieldType: NoName37;
+  operator: NoName38;
+  stringValue: NoName39;
+  logicalOperator?: NoName40;
+}
+export interface NoName41 {
+  fieldCode: NoName42;
+  fieldType: NoName43;
+  operator: NoName44;
+  stringValue: NoName45;
+  logicalOperator?: NoName46;
+}
+export interface NoName47 {
+  fieldCode: NoName48;
+  fieldType: NoName49;
+  operator: NoName50;
+  arrayValue: NoName51;
+  logicalOperator?: NoName52;
+}
+export interface NoName53 {
+  fieldCode: NoName54;
+  fieldType: NoName55;
+  operator: NoName56;
+  stringValue: NoName57;
+  logicalOperator?: NoName58;
+}
+export interface NoName59 {
+  fieldCode: NoName60;
+  fieldType: NoName61;
+  operator: NoName62;
+  arrayValue: NoName63;
+  logicalOperator?: NoName64;
+}
+export interface NoName65 {
+  fieldCode: NoName66;
+  fieldType: NoName67;
+  operator: NoName68;
+  stringValue: NoName69;
+  logicalOperator?: NoName70;
+}
+export interface Entity {
+  fieldCode: NoName71;
+  fieldType: NoName72;
+  operator: NoName73;
+  entityValue: NoName74;
+  logicalOperator?: NoName77;
 }
