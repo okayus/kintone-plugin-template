@@ -39,7 +39,7 @@ uvx --version
 
 #### 2.1 Serena MCP Serverの実行
 ```bash
-uvx --from git+https://github.com/oraios/serena serena-mcp-server --context ide-assistant --project /home/okayu/dev/kintone-plugin/kintone-plugin-template
+uvx --from git+https://github.com/oraios/serena serena-mcp-server --context ide-assistant --project /home/okayu/dev/kintone-plugin/[YOUR_PROJECT]
 ```
 
 #### 2.2 初回起動時の処理
@@ -66,7 +66,7 @@ Claude Codeの設定ファイル（`~/.claude.json`）に以下の設定が含�
   "mcpServers": {
     "serena": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/oraios/serena", "serena-mcp-server", "--context", "ide-assistant", "--project", "/home/okayu/dev/kintone-plugin/kintone-plugin-template"]
+      "args": ["--from", "git+https://github.com/oraios/serena", "serena-mcp-server", "--context", "ide-assistant", "--project", "/home/okayu/dev/kintone-plugin/[YOUR_PROJECT]"],
     }
   }
 }
